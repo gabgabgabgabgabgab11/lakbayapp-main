@@ -1,0 +1,157 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Add to RegistrationPage.css and CommuterLogin.css */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55); /* Optional: darken */
+  backdrop-filter: blur(4px);
+  z-index: -1;
+}
+
+body {
+  color: white;
+  overflow-x: hidden;
+  height: 100vh;
+  background: url('../img/bg.jpg') center center / cover no-repeat fixed;
+  position: relative;
+}
+
+header {
+  background: rgba(0, 0, 0, 0.6);
+  padding: 15px 5%;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+nav .logo h2 {
+  color: #FFD700;
+  font-weight: 700;
+  font-size: 1.8rem;
+}
+
+.nav-links {
+  list-style: none;
+  display: flex;
+  gap: 25px;
+}
+
+.nav-links a {
+  color: #fff;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s;
+}
+
+.nav-links a:hover {
+  color: #FFD700;
+}
+
+.register-container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.register-card {
+  background: rgba(0, 0, 0, 0.7);
+  padding: 40px;
+  border-radius: 15px;
+  width: 400px;
+  text-align: center;
+  box-shadow: 0 0 20px rgba(0,0,0,0.6);
+}
+
+h1 {
+  margin-bottom: 10px;
+  color: #FFD700;
+}
+
+.role-selection {
+  display: flex;
+  justify-content: space-between;
+  margin: 20px 0;
+}
+
+.role-btn {
+  background: none;
+  border: 2px solid #FFD700;
+  color: #FFD700;
+  padding: 8px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.3s;
+  flex: 1;
+  margin: 0 5px;
+}
+
+.role-btn.active, .role-btn:hover {
+  background: #FFD700;
+  color: #000;
+}
+
+.form-fields {
+  text-align: left;
+  margin-bottom: 20px;
+}
+
+.form-fields label {
+  display: block;
+  margin-top: 10px;
+  font-weight: 500;
+}
+
+.form-fields input {
+  width: 100%;
+  padding: 10px;
+  margin-top: 5px;
+  border: none;
+  border-radius: 5px;
+}
+
+.submit-btn {
+  background: #FFD700;
+  color: #000;
+  font-weight: 600;
+  padding: 10px 0;
+  border: none;
+  width: 100%;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.submit-btn:hover {
+  background: #ffcc33;
+}
+
+.redirect {
+  margin-top: 15px;
+  font-size: 0.9rem;
+}
+
+#status-message {
+  margin-top: 10px;
+  color: #FFD700;
+}
+
+footer {
+  background: rgba(0, 0, 0, 0.6);
+  text-align: center;
+  padding: 10px 0;
+}

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lakbay | Driver Dashboard</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+
+  <!-- External CSS -->
+  <link rel="stylesheet" href="styles/DriverHP.css" />
+
+  <!-- Optional: Leaflet Editable -->
+  <script src="https://unpkg.com/leaflet-editable/dist/Leaflet.Editable.min.js"></script>
+</head>
+
+<body>
+  <header>
+    <nav>
+      <div class="logo">
+        <h2>Lakbay</h2>
+      </div>
+      <ul class="nav-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="#">Routes</a></li>
+        <li><a href="#">Saved Trips</a></li>
+        <li><a href="#">Help</a></li>
+        <li><a href="/">Logout</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <div class="dashboard-wrapper">
+      <aside class="ads-container">
+        <div class="ad-card">
+          <img src="public/img/ad1.jpg" alt="Ad 1">
+          <p>Keep your jeep in top condition with Lakbay's maintenance partners!</p>
+        </div>
+        <div class="ad-card">
+          <img src="public/img/ad2.jpg" alt="Ad 2">
+          <p>Drive smart, earn rewards! Join Lakbay’s incentive program.</p>
+        </div>
+      </aside>
+
+      <section class="map-container">
+        <div class="map-header">
+          <h1>Driver Dashboard</h1>
+          <p>Manage and visualize your jeepney routes in real-time.</p>
+        </div>
+
+        <div id="map"></div>
+
+        <div class="controls">
+          
+          <button id="start-driving">🚐 Start Driving</button>
+
+        </div>
+
+        <p id="status">Click on the map to add waypoints for your route.<br>
+          You can save multiple routes. Only the most recent will animate the jeepney.</p>
+
+        <div id="routes-list"></div>
+      </section>
+
+      <aside class="info-container">
+        <div class="info-card">
+          <h3>📦 Route Data for Commuter Dashboard</h3>
+          <textarea id="route-data" rows="10" readonly></textarea>
+        </div>
+
+        <div class="info-card">
+          <h3>📍 Waypoints</h3>
+          <div id="waypoint-list"></div>
+        </div>
+
+        <div class="ad-mini">
+          <img src="public/img/ad3.jpg" alt="Ad 3">
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <footer>
+    <p>© 2025 Lakbay. All rights reserved.</p>
+  </footer>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+  <script src="scripts/DriverHP.js"></script>
+</body>
+</html>

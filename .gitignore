@@ -1,0 +1,44 @@
+# Node.js dependencies
+node_modules/
+
+# Environment files
+.env
+.env.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor directories and files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Build outputs
+dist/
+build/
+
+# Optional: lockfiles (uncomment if you don't want to commit them)
+# package-lock.json
+# yarn.lock
+
+# Ignore local IDE or OS-specific files
+*.log
+
+# Ignore files with secrets
+secrets.json
+
+# Ignore coverage reports
+coverage/
+
+# Keep public assets tracked (do not ignore) — icons and images are committed in this project
+# public/icons/
+# public/img/

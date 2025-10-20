@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lakbay | Register</title>
+  <link rel="stylesheet" href="styles/RegistrationPage.css" />
+  <link rel="icon" type="image/x-icon" href="img/jeepney.ico">
+</head>
+
+<body>
+    <div class="overlay"></div>
+  <header>
+    <nav>
+      <div class="logo">
+        <h2>Lakbay</h2>
+      </div>
+      <ul class="nav-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="#">About Us</a></li>
+        <li><a href="#">Contact</a></li>
+        <li><a href="LoginPage.html">Login</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <section class="register-container">
+      <div class="register-card">
+        <h1>Create Your Account</h1>
+        <p>Select your role below to begin registration.</p>
+
+        <div class="role-selection">
+          <button class="role-btn active" data-role="commuter">Commuter</button>
+          <button class="role-btn" data-role="driver">Driver</button>
+          <button class="role-btn" data-role="fleet">Fleet Manager</button>
+        </div>
+
+        <form id="register-form">
+          <div class="form-fields"></div>
+          <button type="submit" class="submit-btn">Register</button>
+        </form>
+        <p class="redirect">Already have an account? <a href="LoginPage.html">Login here</a></p>
+        <p id="status-message"></p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2025 Lakbay. All rights reserved.</p>
+  </footer>
+
+  <script src="scripts/RegistrationPage.js"></script>
+</body>
+</html>

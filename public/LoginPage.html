@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lakbay | Commuter Login</title>
+  <link rel="icon" type="image/x-icon" href="img/jeepney.ico" />
+  <link rel="stylesheet" href="styles/LoginPage.css" />
+</head>
+
+<body>
+
+  <div class="background"></div>
+  <div class="overlay"></div>
+  <header>
+    <nav>
+      <div class="logo">
+        <h2>Lakbay</h2>
+      </div>
+      <ul class="nav-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="#">About</a></li>
+        <li><a href="#">Support</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <section class="login-section">
+      <div class="login-card">
+        <h1>Commuter Login</h1>
+        <p>Track your jeepneys, plan your trip, and travel smarter.</p>
+
+        <form id="commuter-login-form">
+          <div class="form-group">
+            <label for="email">Email Address</label>
+            <input type="email" id="email" placeholder="Enter your email" required />
+          </div>
+
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" placeholder="Enter your password" required />
+          </div>
+
+          <button type="submit">Login</button>
+          <p class="status-text" id="status-text"></p>
+        </form>
+
+        <div class="extra-links">
+          <a href="#">Forgot Password?</a>
+          <a href="RegistrationPage.html" id="create-account">Create an Account</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2025 Lakbay. All rights reserved.</p>
+  </footer>
+
+  <!-- Dedicated external script -->
+  <script src="scripts/LoginPage.js"></script>
+</body>
+</html>
