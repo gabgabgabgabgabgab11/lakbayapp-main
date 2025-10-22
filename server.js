@@ -1,3 +1,7 @@
+// server.js
+// Full server with Helmet CSP allowing unpkg/jsdelivr for development so Leaflet + routing load,
+// location-specific rate limiter, routes API, and updated /api/jeepney-location response as epoch ms.
+
 import express from "express";
 import cors from "cors";
 import path from "path";
@@ -14,20 +18,22 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
-const JWT_SECRET = process.env.JWT_SECRET || "a1b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef0123456789abcdef";
+const JWT_SECRET = process.env.JWT_SECRET || "a_long_default_secret_replace_in_prod";
 const ALLOWED_ORIGINS = (process.env.CORS_ORIGIN || "").split(",").map(s => s.trim()).filter(Boolean);
 
-app.set('trust proxy', 1);
+app.set("trust proxy", 1);
 
-// --- DB connection debug (temporary) ---
+// DB debug (temporary)
 (async function testDB() {
   try {
     const { rows } = await pool.query("SELECT current_database() AS db, current_user AS user, inet_server_addr() AS server_addr, inet_server_port() AS server_port");
-    console.log("DB INFO:", rows[0]); // prints the DB name, db user, host/port server sees
+    console.log("DB INFO:", rows[0]);
   } catch (err) {
     console.error("DB connection test FAILED:", err);
   }
 })();
+
+// Debug endpoints (temporary)
 app.get("/api/debug/dbinfo", async (req, res) => {
   try {
     const { rows } = await pool.query("SELECT current_database() AS db, current_user AS user");
@@ -36,7 +42,6 @@ app.get("/api/debug/dbinfo", async (req, res) => {
     return res.status(500).json({ ok: false, error: err.message });
   }
 });
-
 app.get("/api/debug/drivers_count", async (req, res) => {
   try {
     const { rows } = await pool.query("SELECT count(*)::int AS cnt FROM drivers");
@@ -46,11 +51,35 @@ app.get("/api/debug/drivers_count", async (req, res) => {
   }
 });
 
-// Middleware
-app.use(helmet());
+// Helmet CSP configured to allow CDNs and OpenStreetMap tiles (dev)
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "https://unpkg.com", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://unpkg.com", "https://cdn.jsdelivr.net"],
+      imgSrc: ["'self'", "data:", "https://*.tile.openstreetmap.org", "https://tile.openstreetmap.org", "https://unpkg.com", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
+      // IMPORTANT: allow the OSRM demo router host so the browser can make XHRs to it
+      connectSrc: [
+        "'self'",
+        "ws:",
+        "wss:",
+        "https://*.ngrok.io",
+        "https://tile.openstreetmap.org",
+        "https://router.project-osrm.org",
+        "https://unpkg.com",
+        "https://cdn.jsdelivr.net",
+        "https://cdnjs.cloudflare.com"
+      ],
+      fontSrc: ["'self'", "https://unpkg.com", "https://fonts.gstatic.com", "data:"],
+      objectSrc: ["'none'"],
+      frameAncestors: ["'self'"],
+    },
+  },
+}));
 app.use(express.json());
 
-// Rate limiter for API endpoints
+// Default API rate limiter
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 120,
@@ -59,20 +88,26 @@ const apiLimiter = rateLimit({
 });
 app.use("/api/", apiLimiter);
 
-// CORS configuration
+// Location-specific limiter (drivers)
+const locationLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 600, // allow higher rate for location updates
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use("/api/jeepney-location", locationLimiter);
+
+// CORS
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
-    const defaultAllowed = [
-      "http://localhost:3000",
-      "http://127.0.0.1:3000",
-    ];
+    const defaultAllowed = ["http://localhost:3000", "http://127.0.0.1:3000"];
     const isAllowed = ALLOWED_ORIGINS.includes(origin) || defaultAllowed.some(u => origin.startsWith(u)) || origin.includes("ngrok.io");
     return isAllowed ? callback(null, true) : callback(new Error("CORS policy: This origin is not allowed"));
   }
 }));
 
-// Simple request logger
+// Logger
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.ip} ${req.method} ${req.url}`);
   next();
@@ -83,34 +118,25 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 app.use(express.static(path.join(__dirname, "public")));
 
-// -----------------------------
 // Helpers
-// -----------------------------
 function tableForRole(role) {
   if (role === "driver") return "drivers";
   if (role === "commuter") return "commuters";
   throw new Error("Invalid role");
 }
-
 async function findUserByEmail(role, email) {
   const table = tableForRole(role);
   const q = `SELECT * FROM ${table} WHERE email = $1 LIMIT 1`;
   const { rows } = await pool.query(q, [email]);
   return rows[0];
 }
-
-// -----------------------------
-// JWT auth middleware
-// -----------------------------
 function requireAuth(req, res, next) {
   const auth = req.headers.authorization;
-  if (!auth || !auth.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Missing Authorization header." });
-  }
+  if (!auth || !auth.startsWith("Bearer ")) return res.status(401).json({ message: "Missing Authorization header." });
   const token = auth.slice(7);
   try {
     const payload = jwt.verify(token, JWT_SECRET);
-    req.user = payload; // { id, role, iat, exp }
+    req.user = payload;
     return next();
   } catch (err) {
     console.error("JWT verify failed:", err.message);
@@ -118,60 +144,43 @@ function requireAuth(req, res, next) {
   }
 }
 
-// -----------------------------
-// Registration endpoint
-// -----------------------------
+// Registration
 app.post("/api/register/:role", async (req, res) => {
   const { role } = req.params;
   const { email, password, name } = req.body;
-
-  if (!["driver", "commuter"].includes(role)) {
-    return res.status(400).json({ message: "Invalid role type." });
-  }
-  if (!email || !password) {
-    return res.status(400).json({ message: "Email and password are required." });
-  }
+  if (!["driver", "commuter"].includes(role)) return res.status(400).json({ message: "Invalid role type." });
+  if (!email || !password) return res.status(400).json({ message: "Email and password are required." });
 
   try {
-    // Check existing
-    const existing = await findUserByEmail(role, email);
-    if (existing) return res.status(400).json({ message: "Email already registered." });
-
-    // Hash password
     const password_hash = await bcrypt.hash(password, 12);
-
-    // Insert
     const table = tableForRole(role);
-    const insertSql = `INSERT INTO ${table} (email, password_hash, name, created_at) VALUES ($1, $2, $3, NOW()) RETURNING id, email, name`;
-    const { rows } = await pool.query(insertSql, [email, password_hash, name || null]);
-    const created = rows[0];
+    const insertSql = `INSERT INTO ${table} (email, password_hash, name, created_at) VALUES ($1,$2,$3,NOW()) ON CONFLICT (email) DO NOTHING RETURNING id,email,name`;
+    const result = await pool.query(insertSql, [email, password_hash, name || null]);
 
+    if (result.rowCount === 0) {
+      const existing = await findUserByEmail(role, email);
+      return res.status(409).json({ message: "Email already registered.", user: existing ? { id: existing.id, email: existing.email, name: existing.name } : null });
+    }
+
+    const created = result.rows[0];
     console.log(`✅ New ${role} registered:`, created.email);
-    return res.json({ message: `${role} registered successfully.`, user: { id: created.id, email: created.email, name: created.name } });
+    return res.status(201).json({ message: `${role} registered successfully.`, user: { id: created.id, email: created.email, name: created.name } });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Server error." });
   }
 });
 
-// -----------------------------
-// Login endpoint (returns JWT)
-// -----------------------------
+// Login
 app.post("/api/login/:role", async (req, res) => {
   const { role } = req.params;
   const { email, password } = req.body;
-
-  if (!["driver", "commuter"].includes(role)) {
-    return res.status(400).json({ message: "Invalid role type." });
-  }
-  if (!email || !password) {
-    return res.status(400).json({ message: "Email and password are required." });
-  }
+  if (!["driver", "commuter"].includes(role)) return res.status(400).json({ message: "Invalid role type." });
+  if (!email || !password) return res.status(400).json({ message: "Email and password are required." });
 
   try {
     const user = await findUserByEmail(role, email);
     if (!user) return res.status(401).json({ message: "Invalid email or password." });
-
     const ok = await bcrypt.compare(password, user.password_hash);
     if (!ok) return res.status(401).json({ message: "Invalid email or password." });
 
@@ -184,63 +193,62 @@ app.post("/api/login/:role", async (req, res) => {
   }
 });
 
-// -----------------------------
-// Save jeepney location (from driver) - stores in driver_locations table
-// Protected: only authenticated drivers can update their own location
-// -----------------------------
+// Save jeepney location (protected)
 app.post("/api/jeepney-location", requireAuth, async (req, res) => {
   const { driverId, lat, lng } = req.body;
-
-  // Basic validation
-  if (!driverId || typeof lat !== "number" || typeof lng !== "number") {
-    return res.status(400).json({ message: "Invalid data." });
-  }
-
-  // ensure the caller is the driver and IDs match
-  if (req.user.role !== "driver" || Number(req.user.id) !== Number(driverId)) {
-    return res.status(403).json({ message: "Forbidden: you may only update your own location." });
-  }
+  if (!driverId || typeof lat !== "number" || typeof lng !== "number") return res.status(400).json({ message: "Invalid data." });
+  if (req.user.role !== "driver" || Number(req.user.id) !== Number(driverId)) return res.status(403).json({ message: "Forbidden: you may only update your own location." });
 
   try {
     const upsertSql = `
       INSERT INTO driver_locations (driver_id, lat, lng, updated_at)
       VALUES ($1, $2, $3, NOW())
-      ON CONFLICT (driver_id) DO UPDATE SET lat = EXCLUDED.lat, lng = EXCLUDED.lng, updated_at = EXCLUDED.updated_at
+      ON CONFLICT (driver_id) DO UPDATE
+        SET lat = EXCLUDED.lat,
+            lng = EXCLUDED.lng,
+            updated_at = EXCLUDED.updated_at
       RETURNING driver_id, lat, lng, updated_at
     `;
     const { rows } = await pool.query(upsertSql, [driverId, lat, lng]);
     return res.json({ message: "Location updated.", location: rows[0] });
   } catch (err) {
-    console.error(err);
+    console.error("Location update error:", err);
     return res.status(500).json({ message: "Server error." });
   }
 });
 
-// -----------------------------
-// Get all jeepney locations (for commuter) - read does not require auth
-// -----------------------------
+// Get all jeepney locations (public) — return updatedAt as epoch ms so clients compare numerically
 app.get("/api/jeepney-location", async (req, res) => {
   try {
-    const { rows } = await pool.query("SELECT driver_id, lat, lng, updated_at FROM driver_locations");
+    const { rows } = await pool.query("SELECT driver_id, lat, lng, (extract(epoch from updated_at) * 1000)::bigint AS updated_at_ms FROM driver_locations");
     const locations = {};
     rows.forEach(r => {
-      locations[r.driver_id] = { lat: Number(r.lat), lng: Number(r.lng), updatedAt: r.updated_at };
+      locations[r.driver_id] = { lat: Number(r.lat), lng: Number(r.lng), updatedAt: Number(r.updated_at_ms) };
     });
     res.json({ locations });
   } catch (err) {
-    console.error(err);
+    console.error("Get locations error:", err);
     res.status(500).json({ message: "Server error." });
   }
 });
 
-// -----------------------------
+// Routes endpoint (for commuter drawSavedRoutes)
+app.get("/api/routes", async (req, res) => {
+  try {
+    const { rows } = await pool.query("SELECT id, driver_id, route_name AS name, waypoints FROM driver_routes ORDER BY id DESC");
+    return res.json(rows);
+  } catch (err) {
+    console.error("GET /api/routes error:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
 // Serve front-end
-// -----------------------------
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "LandingPage.html"));
 });
 
-// Start the server, bind to all interfaces and print useful URLs
+// Start server
 const server = app.listen(PORT, "0.0.0.0", () => {
   const addr = server.address();
   console.log(`🚀 Server listening on port ${addr.port}`);
