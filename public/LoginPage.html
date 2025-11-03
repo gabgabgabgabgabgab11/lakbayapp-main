@@ -3,9 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Lakbay | Commuter Login</title>
+  <title>Lakbay | Login</title>
   <link rel="icon" type="image/x-icon" href="img/jeepney.ico" />
+  <!-- keep the original styling file -->
   <link rel="stylesheet" href="styles/LoginPage.css" />
+  <!-- navigation script (keeps role switching via landing page buttons) -->
+  <script src="scripts/navigation.js" defer></script>
+  <!-- shared login handler (handles commuter vs driver via ?role=...) -->
+  <script src="scripts/LoginPage.js" defer></script>
+  <!-- optional: include web fallback tracker if you added it -->
+  <script src="scripts/webLocationTracker.js" defer></script>
 </head>
 
 <body>
@@ -28,18 +35,21 @@
   <main>
     <section class="login-section">
       <div class="login-card">
-        <h1>Commuter Login</h1>
-        <p>Track your jeepneys, plan your trip, and travel smarter.</p>
+        <!-- title and subtitle will be adjusted by scripts/login.js based on ?role=driver|commuter -->
+        <h1 id="login-title">Commuter Login</h1>
+        <p id="login-sub">Track your jeepneys, plan your trip, and travel smarter.</p>
 
-        <form id="commuter-login-form">
+        <!-- NOTE: this form id matches the shared login handler in scripts/login.js -->
+        <form id="shared-login-form">
           <div class="form-group">
             <label for="email">Email Address</label>
-            <input type="email" id="email" placeholder="Enter your email" required />
+            <!-- keep same input ids so login.js can read them -->
+            <input type="email" id="email" name="email" placeholder="Enter your email" required />
           </div>
 
           <div class="form-group">
             <label for="password">Password</label>
-            <input type="password" id="password" placeholder="Enter your password" required />
+            <input type="password" id="password" name="password" placeholder="Enter your password" required />
           </div>
 
           <button type="submit">Login</button>
@@ -57,8 +67,5 @@
   <footer>
     <p>© 2025 Lakbay. All rights reserved.</p>
   </footer>
-
-  <!-- Dedicated external script -->
-  <script src="scripts/LoginPage.js"></script>
 </body>
 </html>

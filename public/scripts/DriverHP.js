@@ -1,150 +1,148 @@
+// driverhp.js
+// DriverHomepage script (no overlay auto-creation elsewhere).
+// - Validates JWT expiry and forces login when expired (redirects to LoginPage.html?role=driver).
+// - Provides helper functions to save token, send location updates, and start/stop tracking.
+// - If you previously had an overlay/modal in this file, this version removes it and instead redirects to the shared LoginPage.
+// Place at: public/scripts/driverhp.js
 
+(function () {
+  const DEFAULT_API_BASE = 'http://localhost:3000'; // fallback base if not running through ngrok/origin
+  const endpointsToTry = [
+    '/api/login/driver',
+    '/api/driver-login',
+    '/api/login',
+    '/auth/login',
+    '/login'
+  ];
 
-(() => {
+    const burgerBtn = document.getElementById('burger-btn');
+    const navLinks = document.querySelector('.nav-links');
+    burgerBtn.addEventListener('click', () => {
+      navLinks.classList.toggle('show');
+    });
+    
   const API_BASE = (() => {
-    const origin = window.location.origin;
-    return origin.includes('ngrok') || origin.startsWith('http') ? origin : 'http://localhost:3000';
+    try {
+      const origin = (window.location && window.location.origin) || '';
+      if (origin.includes('ngrok') || origin.startsWith('http')) return origin.replace(/\/$/, '');
+    } catch (e) { /* ignore */ }
+    return DEFAULT_API_BASE;
   })();
 
   function decodeJwtPayload(token) {
+    if (!token) return null;
     try {
       const payloadBase64 = token.split('.')[1];
       const json = atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/'));
+      // decodeURIComponent(escape(...)) to handle utf8 characters in some tokens
       return JSON.parse(decodeURIComponent(escape(json)));
     } catch (e) {
+      console.warn('Failed to decode JWT payload', e);
       return null;
     }
   }
 
-  window.addEventListener('DOMContentLoaded', () => {
-    const mapContainer = document.getElementById('map');
-    const loginBtn = document.getElementById('login-btn');
-    const emailInput = document.getElementById('login-email');
-    const passInput = document.getElementById('login-password');
+  function isTokenExpired(token) {
+    if (!token) return true;
+    const payload = decodeJwtPayload(token);
+    if (!payload) return true; // if can't parse, treat as expired to force re-login
+    if (!payload.exp) return false; // no expiry claim — assume valid
+    return Date.now() > payload.exp * 1000;
+  }
 
+  // Save token in multiple keys for compatibility with various parts of the app
+  function saveTokenAndId(token, driverId, apiBase) {
+    try {
+      localStorage.setItem('driverToken', token);
+      localStorage.setItem('driver_token', token); // compatibility key
+      if (driverId != null) localStorage.setItem('driverId', String(driverId));
+      if (apiBase) localStorage.setItem('driver_api_base', apiBase);
+      console.log('Saved driver token (len=' + (token ? token.length : 0) + ') driverId=' + driverId);
+    } catch (e) {
+      console.warn('Failed to save token in localStorage', e);
+    }
+  }
+
+  // Send location to backend
+  async function sendLocationUpdate(lat, lng) {
+    const token = localStorage.getItem('driverToken') || localStorage.getItem('driver_token');
+    const driverId = localStorage.getItem('driverId');
+    if (!token || !driverId) {
+      console.warn('Not authenticated as driver; skipping send');
+      return;
+    }
+    try {
+      const url = (localStorage.getItem('driver_api_base') || API_BASE).replace(/\/$/, '') + '/api/jeepney-location';
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ driverId: Number(driverId), lat: Number(lat), lng: Number(lng) })
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(()=>({ message: 'unknown' }));
+        console.warn('Location update failed', res.status, err);
+      } else {
+        // success - optional handling
+      }
+    } catch (err) {
+      console.error('sendLocationUpdate error', err);
+    }
+  }
+
+  // Attempt to login against known endpoints (used only if you want inline login from this file).
+  // Left for reference / optional use. The production login is handled on LoginPage.html.
+  async function tryPostLogin(endpointPath, email, password) {
+    const url = endpointPath.startsWith('http') ? endpointPath : (API_BASE + endpointPath);
+    return fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+  }
+
+  // Ensure valid token; if missing / expired, redirect to shared login page
+  function ensureValidTokenOrRedirect() {
+    const token = localStorage.getItem('driverToken') || localStorage.getItem('driver_token');
+    if (!token || isTokenExpired(token)) {
+      // Clear stale tokens
+      localStorage.removeItem('driverToken');
+      localStorage.removeItem('driver_token');
+      localStorage.removeItem('driverId');
+      // Redirect to unified login page for drivers
+      window.location.replace('LoginPage.html?role=driver');
+      return false;
+    }
+    return true;
+  }
+
+  // Map and tracking setup (keeps behavior from existing DriverHomepage)
+  document.addEventListener('DOMContentLoaded', () => {
+    // enforce auth on page load before initializing driver features
+    if (!ensureValidTokenOrRedirect()) return;
+
+    const mapContainer = document.getElementById('map');
     const startDriveBtn = document.getElementById('start-drive-btn');
     const stopDriveBtn = document.getElementById('stop-drive-btn');
     const startDrivingBtn = document.getElementById('start-driving'); // legacy id compatibility
     const primaryStartBtn = startDrivingBtn || startDriveBtn;
     const status = document.getElementById('driver-status');
 
-    // Build login overlay if token missing
-    function ensureLoginOverlay() {
-      if (localStorage.getItem('driverToken')) {
-        // already authenticated
-        const stored = localStorage.getItem('driverToken');
-        if (stored && status) status.textContent = 'Driver authenticated';
-        return null;
-      }
-
-      // create overlay DOM (only once)
-      let overlay = document.getElementById('driver-login-overlay');
-      if (overlay) return overlay;
-
-      overlay = document.createElement('div');
-      overlay.id = 'driver-login-overlay';
-      overlay.style.position = 'fixed';
-      overlay.style.left = '0';
-      overlay.style.top = '0';
-      overlay.style.width = '100vw';
-      overlay.style.height = '100vh';
-      overlay.style.background = 'rgba(255,255,255,0.95)';
-      overlay.style.zIndex = '99999';
-      overlay.style.display = 'flex';
-      overlay.style.flexDirection = 'column';
-      overlay.style.justifyContent = 'center';
-      overlay.style.alignItems = 'center';
-      overlay.innerHTML = `
-        <div style="width:320px;padding:20px;border-radius:8px;background:#fff;border:1px solid #ddd;box-shadow:0 6px 20px rgba(0,0,0,0.08);">
-          <h3 style="margin:0 0 10px 0">Driver Sign In</h3>
-          <input id="overlay-login-email" placeholder="Email" style="width:100%;padding:8px;margin-bottom:8px" />
-          <input id="overlay-login-password" placeholder="Password" type="password" style="width:100%;padding:8px;margin-bottom:12px" />
-          <div style="display:flex;gap:8px;justify-content:flex-end;">
-            <button id="overlay-login-cancel" style="padding:8px 12px;background:#f6f6f6;border:1px solid #ddd;border-radius:4px;">Cancel</button>
-            <button id="overlay-login-submit" style="padding:8px 12px;background:#007bff;color:#fff;border:none;border-radius:4px;">Sign In</button>
-          </div>
-        </div>
-      `;
-      document.body.appendChild(overlay);
-
-      // handlers
-      document.getElementById('overlay-login-cancel').addEventListener('click', () => {
-        overlay.style.display = 'none';
-      });
-
-      document.getElementById('overlay-login-submit').addEventListener('click', async () => {
-        const email = document.getElementById('overlay-login-email').value.trim();
-        const password = document.getElementById('overlay-login-password').value;
-        if (!email || !password) return alert('Email & password required');
-        try {
-          const res = await fetch(`${API_BASE}/api/login/driver`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
-          });
-          const j = await res.json();
-          if (!res.ok) {
-            alert(j.message || 'Login failed');
-            return;
-          }
-          const token = j.token;
-          localStorage.setItem('driverToken', token);
-          const payload = decodeJwtPayload(token);
-          if (payload && payload.id) localStorage.setItem('driverId', String(payload.id));
-          overlay.style.display = 'none';
-          alert('Login successful. You can now Start Driving.');
-          if (status) status.textContent = 'Driver authenticated';
-        } catch (err) {
-          console.error('Overlay login error', err);
-          alert('Network error signing in');
-        }
-      });
-
-      return overlay;
-    }
-
-    // initialize map if present
     let map = null;
-    if (mapContainer) {
-      map = L.map('map').setView([14.7959, 120.8789], 15);
-      window._LAKBY_MAP_DRIVER = map;
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
-      }).addTo(map);
+    try {
+      if (mapContainer && typeof L !== 'undefined') {
+        map = L.map('map').setView([14.7959, 120.8789], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+      }
+    } catch (e) {
+      console.warn('Leaflet init failed', e);
     }
 
-    // driver marker & watch
     let jeepMarker = null;
     let driverWatchId = null;
     let lastDriverSentAt = 0;
     const DRIVER_SEND_INTERVAL = 2000;
-
-    async function sendLocationUpdate(lat, lng) {
-      const token = localStorage.getItem('driverToken');
-      const driverId = localStorage.getItem('driverId');
-      if (!token || !driverId) {
-        console.warn('Not authenticated as driver; skipping send');
-        if (status) status.textContent = 'Not authenticated as driver';
-        return;
-      }
-      try {
-        const res = await fetch(`${API_BASE}/api/jeepney-location`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ driverId: Number(driverId), lat: Number(lat), lng: Number(lng) })
-        });
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({ message: 'unknown' }));
-          console.warn('Location update failed', res.status, err);
-          if (status) status.textContent = `Update failed: ${res.status}`;
-        } else {
-          if (status) status.textContent = `Driving: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-        }
-      } catch (err) {
-        console.error('sendLocationUpdate error', err);
-        if (status) status.textContent = 'Update error';
-      }
-    }
 
     function startDriverTracking() {
       if (!navigator.geolocation) {
@@ -158,7 +156,6 @@
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
 
-        // show/update local marker on driver map
         if (map) {
           const latlng = [lat, lng];
           if (!jeepMarker) {
@@ -179,7 +176,6 @@
         if (status) status.textContent = 'Geolocation error';
       }, { enableHighAccuracy: true, maximumAge: 500, timeout: 10000 });
 
-      // UI updates (restored as requested)
       if (primaryStartBtn) primaryStartBtn.textContent = "🛑 Stop Driving";
       if (status) status.textContent = "Live driving started...";
     }
@@ -197,35 +193,24 @@
       }
     }
 
+    // Hook UI buttons
     if (primaryStartBtn) {
       primaryStartBtn.addEventListener('click', () => {
         if (driverWatchId) stopDriverTracking();
         else {
-          // ensure logged in before starting
-          if (!localStorage.getItem('driverToken')) {
-            const ov = ensureLoginOverlay();
-            if (ov) ov.style.display = 'flex';
-            return;
-          }
+          if (!ensureValidTokenOrRedirect()) return;
           startDriverTracking();
         }
       });
     }
 
     if (startDriveBtn && !primaryStartBtn) startDriveBtn.addEventListener('click', () => {
-      if (!localStorage.getItem('driverToken')) {
-        const ov = ensureLoginOverlay();
-        if (ov) ov.style.display = 'flex';
-        return;
-      }
+      if (!ensureValidTokenOrRedirect()) return;
       startDriverTracking();
     });
     if (stopDriveBtn) stopDriveBtn.addEventListener('click', stopDriverTracking);
 
-    // show overlay automatically if not authenticated so user can't mistakenly "use" driver features
-    if (!localStorage.getItem('driverToken')) {
-      const ov = ensureLoginOverlay();
-      if (ov) ov.style.display = 'flex';
-    }
+    // set status text
+    if (status) status.textContent = 'Driver authenticated';
   });
 })();

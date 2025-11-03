@@ -1,3 +1,10 @@
+// webLocationTracker.js
+// Web fallback location tracker for Chrome/mobile browsers.
+// - Use this when running in a browser (not the native app).
+// - Tracks while the page/tab is open and optionally requests a Screen Wake Lock.
+// - Throttles posts and uses fetch keepalive for unload attempts.
+// Place at: public/scripts/webLocationTracker.js
+
 const WebLocationTracker = (function () {
   let watchId = null;
   let lastPosition = null;
@@ -10,10 +17,10 @@ const WebLocationTracker = (function () {
   let wakeLock = null;
   let heartbeatTimer = null;
 
-  // Start tracking: token = JWT, id = driverId, base = https://your-ngrok-url
+  // Start tracking: token = JWT, id = driverId, _apiBase = https://your-ngrok-url
   async function startWebTracking(_token, _driverId, _apiBase, options = {}) {
     token = _token;
-    driverId = String(_driverId);
+    driverId = String(_driverId || '');
     apiBase = (_apiBase || '').replace(/\/+$/, '');
 
     if (!('geolocation' in navigator)) throw new Error('Geolocation not supported');
@@ -33,19 +40,19 @@ const WebLocationTracker = (function () {
       positionError,
       {
         enableHighAccuracy: true,
-        maximumAge: 1000, // accept recent cached position up to 1s
+        maximumAge: 1000,
         timeout: 10000
       }
     );
 
-    // heartbeat sends lastPosition periodically if watch callbacks get throttled
+    // heartbeat sends lastPosition periodically in case position callbacks are temporarily throttled
     heartbeatTimer = setInterval(() => {
       if (lastPosition && Date.now() - lastPostAt >= throttleMs) {
         sendLocation(lastPosition.coords.latitude, lastPosition.coords.longitude, lastPosition.timestamp);
       }
     }, options.heartbeatMs || 5000);
 
-    // handle page visibility to optionally notify user
+    // handle visibility to warn or adapt
     document.addEventListener('visibilitychange', onVisibilityChange);
 
     console.log('WebLocationTracker started', { driverId, apiBase, watchId });
@@ -65,7 +72,6 @@ const WebLocationTracker = (function () {
 
   function positionSuccess(pos) {
     lastPosition = pos;
-    // throttled posting
     const now = Date.now();
     if (now - lastPostAt >= throttleMs) {
       lastPostAt = now;
@@ -75,7 +81,6 @@ const WebLocationTracker = (function () {
 
   function positionError(err) {
     console.warn('watchPosition error', err);
-    // Some errors (permission denied) need user intervention.
     if (err.code === 1) { // PERMISSION_DENIED
       alert('Location permission denied. Please allow location to send updates.');
     }
@@ -105,21 +110,20 @@ const WebLocationTracker = (function () {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(body),
-        keepalive: true // use keepalive to help send when page is unloading (limited payload size)
+        keepalive: true // helps during unload but limited size
       });
 
       if (!res.ok) {
-        // show concise error for 401 so user can re-login
         if (res.status === 401) {
           console.warn('Server returned 401 — token may be expired. Please re-login.');
-          // optional: emit event or callback so UI can show login
+          // Optionally emit a custom event so UI can handle re-login
+          dispatchEvent(new CustomEvent('webtracker:auth-failed', { detail: { status: 401 } }));
         } else {
           console.warn('Location post failed', res.status, await safeText(res));
         }
       } else {
-        // optional: inspect response
-        // const data = await res.json().catch(()=>null);
-        // console.log('posted ok', data);
+        // Success - optionally dispatch an event
+        dispatchEvent(new CustomEvent('webtracker:posted', { detail: { lat, lng } }));
       }
     } catch (e) {
       console.warn('Network/post error:', e);
@@ -132,7 +136,7 @@ const WebLocationTracker = (function () {
     try { return await res.text(); } catch (e) { return '<no body>'; }
   }
 
-  // Screen Wake Lock (keeps screen ON) - user must allow it; mobile behavior varies.
+  // Screen Wake Lock (keeps screen ON) - mobile behavior varies.
   async function requestWakeLock() {
     if ('wakeLock' in navigator && !wakeLock) {
       try {
@@ -153,21 +157,15 @@ const WebLocationTracker = (function () {
 
   function onVisibilityChange() {
     if (document.visibilityState === 'hidden') {
-      // The browser may throttle JS — warn user if you want
-      console.log('Page hidden — browser may throttle location updates. For continuous tracking keep the tab visible or use the native app.');
+      console.log('Page hidden — browser may throttle location updates. Keep tab visible for continuous tracking.');
+      dispatchEvent(new CustomEvent('webtracker:hidden'));
     } else {
-      console.log('Page visible');
+      dispatchEvent(new CustomEvent('webtracker:visible'));
     }
-  }
-
-  // helper to check if running in a browser (not native)
-  function isNative() {
-    try { return window.Capacitor && (Capacitor.isNativePlatform && Capacitor.isNativePlatform()); } catch (e) { return false; }
   }
 
   return {
     startWebTracking,
-    stopWebTracking,
-    isNative
+    stopWebTracking
   };
 })();

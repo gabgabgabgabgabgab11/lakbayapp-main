@@ -5,14 +5,14 @@ document.addEventListener("DOMContentLoaded", () => {
   if (commuterBtn) {
     commuterBtn.addEventListener("click", () => {
       console.log("Commuter button clicked!");
-      window.location.href = "LoginPage.html";
+      window.location.href = "LoginPage.html?role=commuter";
     });
   }
 
   if (driverBtn) {
     driverBtn.addEventListener("click", () => {
       console.log("Driver button clicked!");
-      window.location.href = "DriverHomepage.html";
+      window.location.href = "LoginPage.html?role=driver";
     });
   }
 });

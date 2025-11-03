@@ -14,12 +14,26 @@ body {
   color: #333;
 }
 
+.background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: url('../img/bg.jpg') center center / cover no-repeat fixed;
+  filter: brightness(0.5);
+  z-index: -1;
+}
+
 /* --- Header & Navigation --- */
 header {
-  background: #007bff;
-  color: #fff;
-  padding: 12px 20px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(8px);
+  padding: 1rem 2rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
 nav {
@@ -31,6 +45,7 @@ nav {
 nav .logo h2 {
   font-weight: bold;
   letter-spacing: 1px;
+  color: #ffc107;
 }
 
 nav ul {
@@ -48,6 +63,24 @@ nav a {
 
 nav a:hover {
   color: #ffc107;
+}
+
+/* --- Burger Button --- */
+#burger-btn {
+  display: none; /* Hidden on desktop */
+  flex-direction: column;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+}
+
+#burger-btn span {
+  width: 25px;
+  height: 3px;
+  background: #fff;
+  margin: 3px 0;
+  transition: 0.3s;
 }
 
 /* --- Dropdown --- */
@@ -94,22 +127,29 @@ main {
   padding: 20px;
 }
 
-.map-section {
-  width: 90%;
-  max-width: 1100px;
-  margin: 0 auto;
+.dashboard-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.map-container {
+  width: 100%;
   text-align: center;
+  position: relative;
 }
 
-.map-section h1 {
-  margin-bottom: 15px;
-  color: #007bff;
+.map-container h1 {
+  color: #ffc107;
 }
 
+.map-container p {
+  color: #ffffff;
+}
 /* --- Map Container --- */
 #map {
   width: 100%;
-  height: 500px;
+  height: calc(100vh - 200px); 
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
@@ -117,6 +157,7 @@ main {
   border: 2px solid #007bff;
   transition: transform 0.2s ease-in-out;
   transform-origin: center;
+  position: relative;
 }
 
 .leaflet-marker-icon {
@@ -137,31 +178,40 @@ button:hover {
   transform: translateY(-1px);
 }
 
-/* Only style the start-driving button */
 #start-driving {
-  background: #007bff;
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  background: rgba(0, 123, 255, 0.9);
   color: #fff;
-  margin: 15px 0;
+  z-index: 1001;
 }
 
-/* --- Location Status --- */
-#location-status {
-  margin-top: 10px;
-  font-size: 0.95em;
+#status {
+  position: absolute;
+  top: 100px;
+  left: 50px;
+  margin: 0;
+  font-size: 0.5em;
   color: #555;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 5px 10px;
+  border-radius: 5px;
+  z-index: 1001;
 }
 
 /* --- Footer --- */
 footer {
-  background: #007bff;
-  color: #fff;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(8px);
+  color: white;
   text-align: center;
   padding: 12px 20px;
   box-shadow: 0 -2px 6px rgba(0,0,0,0.1);
   font-size: 0.9em;
 }
 
-/* --- Directions Panel --- */
+/* --- Directions Panel --- */  
 #directions-panel {
   width: 350px;
   max-height: 400px;
@@ -177,31 +227,74 @@ footer {
   font-size: 14px;
 }
 
+.status-bar {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  background: #eef6ff;
+  padding: 10px 0;
+  border-top: 1px solid #d0e3ff;
+  border-bottom: 2px solid #007bff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  z-index: 1000;
+}
+
+.status-bar button {
+  background: #fff;
+  border: 1.5px solid #007bff;
+  border-radius: 25px;
+  padding: 8px 18px;
+  font-weight: 600;
+  color: #007bff;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.status-bar button:hover {
+  background: #007bff;
+  color: #fff;
+  transform: scale(1.05);
+}
+
+.status-bar button.active {
+  background: #007bff;
+  color: #fff;
+  box-shadow: 0 0 8px rgba(0, 123, 255, 0.4);
+}
+
 /* --- Responsive --- */
 @media (max-width: 768px) {
+  #burger-btn {
+    display: flex; /* Show burger on mobile */
+  }
+
+  nav ul {
+    flex-direction: column;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.9); 
+    position: absolute;
+    top: 60px;
+    right: 20px;
+    border-radius: 8px;
+    padding: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    display: none;
+    z-index: 101;
+  }
+
+  nav ul.show {
+    display: flex;
+  }
+
   #map {
-    height: 400px;
+    height: 700px;
   }
 
   #directions-panel {
     width: 90%;
     top: 80px;
     right: 5%;
-  }
-
-  nav ul {
-    flex-direction: column;
-    gap: 10px;
-    background: rgba(0,123,255,0.95);
-    position: absolute;
-    top: 50px;
-    right: 20px;
-    border-radius: 8px;
-    padding: 10px;
-    display: none;
-  }
-
-  nav ul.show {
-    display: flex;
   }
 }

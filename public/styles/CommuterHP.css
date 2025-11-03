@@ -1,20 +1,44 @@
 /* ===========================
    General Body & Layout
    =========================== */
-body { 
+/* --- Base Reset --- */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+   body { 
     margin: 0;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     display: flex; 
     flex-direction: column; 
     height: 100vh; 
-    background-color: #F5F5F5; /* soft off-white for long exposure */
-    color: #2C2C2C; /* dark but soft text */
+    background-color: #F5F5F5;
+    color: #2C2C2C; 
 }
 
-header { 
-    background: #E8E8E8; /* soft light gray */
-    padding: 12px 20px; 
-    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+.background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: url('../img/bg.jpg') center center / cover no-repeat fixed;
+  filter: brightness(0.5);
+  z-index: -1;
+}
+
+header {
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(8px);
+  padding: 1rem 2rem;
+  position: fixed; 
+  top: 0;
+  width: 100%;
+  z-index: 100;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
 nav { 
@@ -25,7 +49,7 @@ nav {
 
 nav .logo h2 {
     margin: 0;
-    color: #333;
+    color: #ffc300;
 }
 
 nav ul { 
@@ -38,7 +62,7 @@ nav ul {
 
 nav a { 
     text-decoration: none; 
-    color: #2C2C2C;
+    color: white;
     font-weight: 500;
     padding: 6px 10px;
     border-radius: 4px;
@@ -47,6 +71,26 @@ nav a {
 
 nav a:hover {
     background-color: #DADADA;
+}
+
+/* ===========================
+   Burger Button
+   =========================== */
+#burger-btn {
+    display: none; /* Hidden on desktop */
+    flex-direction: column;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+}
+
+#burger-btn span {
+    width: 25px;
+    height: 3px;
+    background: white;
+    margin: 3px 0;
+    transition: 0.3s;
 }
 
 /* ===========================
@@ -59,24 +103,30 @@ main {
     align-items: flex-start; 
     flex-direction: column; 
     padding: 20px 0;
+    padding-top: 80px;
+}
+
+.map-section h1 {
+    color: #ffc300;
 }
 
 .map-section { 
     text-align: center; 
-    width: 85%; 
-    max-width: 1000px; 
+    width: 95%;
     margin: 0 auto;
+    position: relative;
 }
 
 #map { 
     width: 100%; 
-    height: 500px; 
+    height: calc(100vh - 200px);
     border-radius: 8px; 
     border: 1px solid #ccc;
     margin-top: 20px; 
     background: #EDEDED;
     transition: transform 0.2s linear;
     transform-origin: center;
+    position: relative;
 }
 
 .leaflet-marker-icon {
@@ -84,53 +134,66 @@ main {
 }
 
 #location-status { 
-    margin-top: 10px; 
-    font-size: 0.95em; 
-    color: #555; 
+    position: absolute;
+    bottom: 40px;
+    left: 10px;
+    margin-top: 0; 
+    font-size: 0.50em; 
+    color: #555;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 5px 10px;
+    border-radius: 5px;
+    z-index: 1001;
 }
 
 .controls { 
-    margin-top: 12px; 
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
     display: flex;
+    flex-direction: row;
     gap: 10px;
-    flex-wrap: wrap;
+    z-index: 1001;
 }
 
-.controls button, #track-btn, #show-btn, #highlight-btn, #clear-btn {
+.controls button{
     padding: 10px 20px; 
     border-radius: 6px; 
     border: none; 
-    font-size: 1em; 
+    font-size: 0.40em; 
     cursor: pointer;
     transition: background 0.2s ease, transform 0.1s ease;
+    background: rgba(255, 255, 255, 0.9);
+    color: #2C2C2C;
 }
 
-.controls button:hover, #track-btn:hover, #show-btn:hover, #highlight-btn:hover, #clear-btn:hover {
+.controls button:hover{
     transform: translateY(-1px);
 }
+
+
 
 /* ===========================
    Buttons
    =========================== */
 #highlight-btn { 
-    background-color: #5A8DEE; /* muted soft blue */
+    background-color: rgba(90, 141, 238, 0.9); 
     color: #fff; 
 }
 
 #clear-btn { 
-    background-color: #E57373; /* soft red */
+    background-color: rgba(229, 115, 115, 0.9); 
     color: #fff; 
 }
 
 #show-btn { 
-    background-color: #4CAF50; /* soft green */
+    background-color: rgba(76, 175, 80, 0.9); 
     color: #fff; 
 }
 
-#track-btn { 
-    background-color: #5A8DEE; /* soft blue */
-    color: #fff; 
-    margin: 12px 0;
+#track-btn {
+    background: rgba(90, 141, 238, 0.9); 
+    color: #fff;
 }
 
 /* Routes List Buttons */
@@ -167,11 +230,12 @@ main {
    Footer
    =========================== */
 footer { 
-    background: #E8E8E8; 
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(8px);
     text-align: center; 
     padding: 12px 0; 
     font-size: 0.9em; 
-    color: #555;
+    color: white;
     border-top: 1px solid #ccc;
 }
 
@@ -191,7 +255,7 @@ footer {
     border: 1px solid #CCC;
     list-style: none;
     padding: 5px 0;
-    min-width: 220px;
+    min-width: 300px;
     z-index: 10;
     border-radius: 5px;
 }
@@ -202,6 +266,7 @@ footer {
     color: #2C2C2C;
     text-decoration: none;
     font-weight: 500;
+    font-size: 0.5em;
 }
 
 .dropdown-list li a:hover {
@@ -210,4 +275,39 @@ footer {
 
 .routes-dropdown.active .dropdown-list {
     display: block;
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+  #burger-btn {
+    display: flex; /* Show burger on mobile */
+  }
+
+  nav ul {
+    flex-direction: column;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.9); 
+    position: absolute;
+    top: 60px; 
+    right: 20px;
+    border-radius: 8px;
+    padding: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    display: none; /* Hidden by default */
+    z-index: 101;
+  }
+
+  nav ul.show {
+    display: flex; /* Show when toggled */
+  }
+
+  #map {
+    height: 400px;
+  }
+
+  #directions-panel {
+    width: 50%;
+    top: 80px;
+    right: 5%;
+  }
 }

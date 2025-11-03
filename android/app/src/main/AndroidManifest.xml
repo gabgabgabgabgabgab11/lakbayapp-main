@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.lakbay.lakbay">
+
+    <!-- Required runtime permissions -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- For Android 10+ background location -->
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application
         android:allowBackup="true"
@@ -9,33 +18,35 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
+        <!-- Capacitor / Bridge activity (standard). Ensure MainActivity exists at this package -->
         <activity
-            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation"
-            android:name=".MainActivity"
-            android:label="@string/title_activity_main"
-            android:theme="@style/AppTheme.NoActionBarLaunch"
-            android:launchMode="singleTask"
-            android:exported="true">
-
+            android:name="com.lakbay.lakbay.MainActivity"
+            android:exported="true"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
+            android:launchMode="singleTask">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-
         </activity>
 
-        <provider
-            android:name="androidx.core.content.FileProvider"
-            android:authorities="${applicationId}.fileprovider"
+        <!-- Foreground location service: LocationService -->
+        <service
+            android:name="com.lakbay.lakbay.LocationService"
             android:exported="false"
-            android:grantUriPermissions="true">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/file_paths"></meta-data>
-        </provider>
+            android:foregroundServiceType="location" />
+
+        <!-- BroadcastReceiver to receive PendingIntent-delivered locations -->
+        <receiver
+            android:name="com.lakbay.lakbay.LocationBroadcastReceiver"
+            android:exported="false" />
+
+        <!-- If you use any ContentProviders or other components, keep them here.
+             Capacitor may also add its own entries at build-time. -->
+
+        <!-- Example metadata for Capacitor (keeps default behavior) -->
+        <meta-data android:name="com.getcapacitor.DEFAULT_STATUS_BAR_BACKGROUND" android:resource="@color/white"/>
+
     </application>
-
-    <!-- Permissions -->
-
-    <uses-permission android:name="android.permission.INTERNET" />
 </manifest>
