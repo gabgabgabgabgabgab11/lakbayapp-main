@@ -1,22 +1,73 @@
-// DriverHP.js - COMPLETE FILE
+
 (function () {
-  const DEFAULT_API_BASE = 'http://localhost:3000';
   const API_BASE = (() => {
     try {
-      const origin = (window.location && window.location.origin) || '';
-      if (origin.includes('ngrok') || origin.startsWith('http')) return origin.replace(/\/$/, '');
+      const origin = window.location.origin || '';
+      if (origin && origin.startsWith('http')) return origin.replace(/\/$/, '');
     } catch (e) {}
-    return DEFAULT_API_BASE;
+    return 'http://localhost:3000';
   })();
 
-  // Burger menu
-  const burgerBtn = document.getElementById('burger-btn');
-  const navLinks = document.querySelector('.nav-links');
-  if (burgerBtn && navLinks) {
-    burgerBtn.addEventListener('click', () => {
-      navLinks.classList.toggle('show');
+  console.info('[DriverHP] API_BASE =', API_BASE);
+
+   (function forceLocalLeafletIcons() {
+  try {
+    // Use origin-relative paths so they work both locally and via ngrok
+    const iconsBase = '/icons';
+    const iconUrl = `${iconsBase}/marker-icon.png`;
+    const icon2xUrl = `${iconsBase}/marker-icon-2x.png`;
+    const shadowUrl = `${iconsBase}/marker-shadow.png`;
+
+    // 1) mergeOptions (recommended)
+    if (window.L && L.Icon && L.Icon.Default && typeof L.Icon.Default.mergeOptions === 'function') {
+      L.Icon.Default.mergeOptions({
+        iconRetinaUrl: icon2xUrl,
+        iconUrl: iconUrl,
+        shadowUrl: shadowUrl
+      });
+    }
+
+    // 2) defensive: set prototype option (covers some leaflet builds)
+    if (window.L && L.Icon && L.Icon.Default && L.Icon.Default.prototype) {
+      L.Icon.Default.prototype.options.iconUrl = iconUrl;
+      L.Icon.Default.prototype.options.iconRetinaUrl = icon2xUrl;
+      L.Icon.Default.prototype.options.shadowUrl = shadowUrl;
+    }
+
+    // 3) final fallback: define HTML for default icon (rare)
+    window._LAKBY_LEAFLET_ICONS_FORCED = { iconUrl, icon2xUrl, shadowUrl };
+    console.info('[LeafletIcons] forced local icons:', iconUrl);
+  } catch (e) {
+    console.warn('Could not force local leaflet icons', e);
+  }
+})();
+
+  // Use local leaflet images
+  if (window.L && L.Icon && L.Icon.Default) {
+    L.Icon.Default.mergeOptions({
+      iconRetinaUrl: '/icons/marker-icon-2x.png',
+      iconUrl: '/icons/marker-icon.png',
+      shadowUrl: '/icons/marker-shadow.png'
     });
   }
+
+  // Jeep icon
+  let JEEP_ICON = null;
+  if (window.L && L.icon) {
+    JEEP_ICON = L.icon({
+      iconUrl: '/icons/Jeep.png',
+      iconRetinaUrl: '/icons/Jeep@2x.png',
+      iconSize: [32, 32],
+      iconAnchor: [16, 16],
+      popupAnchor: [0, -16],
+      className: 'jeepney-image-icon'
+    });
+  }
+
+  // Burger menu wiring
+  const burgerBtn = document.getElementById('burger-btn');
+  const navLinks = document.querySelector('.nav-links');
+  if (burgerBtn && navLinks) burgerBtn.addEventListener('click', () => navLinks.classList.toggle('show'));
 
   function decodeJwtPayload(token) {
     if (!token) return null;
@@ -29,25 +80,12 @@
       return null;
     }
   }
-
   function isTokenExpired(token) {
     if (!token) return true;
     const payload = decodeJwtPayload(token);
     if (!payload) return true;
     if (!payload.exp) return false;
     return Date.now() > payload.exp * 1000;
-  }
-
-  function saveTokenAndId(token, driverId, apiBase) {
-    try {
-      localStorage.setItem('driverToken', token);
-      localStorage.setItem('driver_token', token);
-      if (driverId != null) localStorage.setItem('driverId', String(driverId));
-      if (apiBase) localStorage.setItem('driver_api_base', apiBase);
-      console.log('Saved driver token');
-    } catch (e) {
-      console.warn('Failed to save token', e);
-    }
   }
 
   function ensureValidTokenOrRedirect() {
@@ -62,7 +100,6 @@
     return true;
   }
 
-  // Send location to backend
   async function sendLocationUpdate(lat, lng) {
     const token = localStorage.getItem('driverToken') || localStorage.getItem('driver_token');
     const driverId = localStorage.getItem('driverId');
@@ -70,32 +107,29 @@
       console.warn('Not authenticated; skipping location send');
       return;
     }
-    
+    const base = (localStorage.getItem('driver_api_base') || API_BASE).replace(/\/$/, '');
+    const url = `${base}/api/jeepney-location`;
+    const body = { driverId: Number(driverId), lat: Number(lat), lng: Number(lng) };
+    console.debug('[DriverHP] POST ->', url, body);
     try {
-      const url = (localStorage.getItem('driver_api_base') || API_BASE).replace(/\/$/, '') + '/api/jeepney-location';
       const res = await fetch(url, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json', 
-          'Authorization': `Bearer ${token}` 
-        },
-        body: JSON.stringify({ 
-          driverId: Number(driverId), 
-          lat: Number(lat), 
-          lng: Number(lng) 
-        })
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(body)
       });
-      
+      console.debug('[DriverHP] POST res', res.status, res.statusText);
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ message: 'unknown' }));
-        console.warn('Location update failed', res.status, err);
+        const text = await res.text().catch(() => '');
+        console.warn('[DriverHP] Location update failed:', res.status, text);
+      } else {
+        const data = await res.json().catch(() => null);
+        console.debug('[DriverHP] Location update success', data);
       }
     } catch (err) {
       console.error('sendLocationUpdate error', err);
     }
   }
 
-  // Send driver status to backend
   async function sendDriverStatus(status) {
     const token = localStorage.getItem('driverToken') || localStorage.getItem('driver_token');
     const driverId = localStorage.getItem('driverId');
@@ -103,27 +137,20 @@
       console.warn('Not authenticated; skipping status send');
       return;
     }
-    
     try {
       const url = (localStorage.getItem('driver_api_base') || API_BASE).replace(/\/$/, '') + '/api/driver-status';
       const res = await fetch(url, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ 
-          driverId: Number(driverId), 
-          status,
-          timestamp: Date.now()
-        })
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ driverId: Number(driverId), status, timestamp: Date.now() })
       });
-      
-      if (res.ok) {
-        console.log(`✅ Status updated to: ${status}`);
+      console.debug('[DriverHP] status POST', res.status);
+      if (!res.ok) {
+        const txt = await res.text().catch(() => '');
+        console.warn('[DriverHP] Status update failed:', res.status, txt);
       } else {
-        const err = await res.json().catch(() => ({ message: 'unknown' }));
-        console.warn('Status update failed', res.status, err);
+        const data = await res.json().catch(() => null);
+        console.debug('[DriverHP] Status updated response', data);
       }
     } catch (err) {
       console.error('Status update error:', err);
@@ -142,10 +169,9 @@
     let jeepMarker = null;
     let driverWatchId = null;
     let lastDriverSentAt = 0;
-    let currentStatus = 'Docking'; // Default status
+    let currentStatus = 'Docking';
     const DRIVER_SEND_INTERVAL = 2000;
 
-    // Initialize map
     try {
       if (mapContainer && typeof L !== 'undefined') {
         map = L.map('map').setView([14.7959, 120.8789], 15);
@@ -157,34 +183,20 @@
       console.warn('Leaflet init failed', e);
     }
 
-    // Status button handlers
     statusButtons.forEach(btn => {
       btn.addEventListener('click', () => {
-        // Remove active from all buttons
         statusButtons.forEach(b => b.classList.remove('active'));
-        // Add active to clicked button
         btn.classList.add('active');
-        
-        // Get status from button text
         currentStatus = btn.textContent.trim();
-        
-        // Send status to backend
         sendDriverStatus(currentStatus);
-        
-        if (statusText) {
-          statusText.textContent = `Status: ${currentStatus}`;
-        }
+        if (statusText) statusText.textContent = `Status: ${currentStatus}`;
       });
     });
 
-    // Send initial status
     sendDriverStatus(currentStatus);
 
     function startDriverTracking() {
-      if (!navigator.geolocation) {
-        alert('Geolocation not supported');
-        return;
-      }
+      if (!navigator.geolocation) { alert('Geolocation not supported'); return; }
       if (driverWatchId) return;
 
       driverWatchId = navigator.geolocation.watchPosition(pos => {
@@ -195,14 +207,12 @@
         if (map) {
           const latlng = [lat, lng];
           if (!jeepMarker) {
-            const jeepIcon = L.icon({ 
-              iconUrl: '/icons/Jeep.png', 
-              iconSize: [32, 32], 
-              iconAnchor: [16, 16] 
-            });
-            jeepMarker = L.marker(latlng, { icon: jeepIcon })
-              .addTo(map)
-              .bindPopup('You (driver)');
+            if (JEEP_ICON) {
+              jeepMarker = L.marker(latlng, { icon: JEEP_ICON }).addTo(map).bindPopup('You (driver)');
+            } else {
+              const tmp = L.icon({ iconUrl: '/icons/Jeep.png', iconSize: [32,32], iconAnchor: [16,16] });
+              jeepMarker = L.marker(latlng, { icon: tmp }).addTo(map).bindPopup('You (driver)');
+            }
             try { map.setView(latlng, 15); } catch (e) {}
           } else {
             jeepMarker.setLatLng(latlng);
@@ -223,24 +233,16 @@
     }
 
     function stopDriverTracking() {
-      if (driverWatchId) {
-        navigator.geolocation.clearWatch(driverWatchId);
-        driverWatchId = null;
-      }
+      if (driverWatchId) { navigator.geolocation.clearWatch(driverWatchId); driverWatchId = null; }
       if (statusText) statusText.textContent = "Stopped driving.";
       if (startDrivingBtn) startDrivingBtn.textContent = "🚐 Start Driving";
-      if (jeepMarker && map) {
-        try { map.removeLayer(jeepMarker); } catch (e) {}
-        jeepMarker = null;
-      }
+      if (jeepMarker && map) { try { map.removeLayer(jeepMarker); } catch (e) {} jeepMarker = null; }
     }
 
-    // Start/Stop driving button
     if (startDrivingBtn) {
       startDrivingBtn.addEventListener('click', () => {
-        if (driverWatchId) {
-          stopDriverTracking();
-        } else {
+        if (driverWatchId) stopDriverTracking();
+        else {
           if (!ensureValidTokenOrRedirect()) return;
           startDriverTracking();
         }

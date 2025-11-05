@@ -1,61 +1,71 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Lakbay | Commuter Dashboard</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+  <link rel="stylesheet" href="styles/leaflet.css" />
+
+  <!-- routing CSS (optional to host locally) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+
+  <!-- App styles -->
   <link rel="stylesheet" href="styles/CommuterHP.css" />
+
+  <!-- Leaflet JS (must load before any code using L) -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <!-- Routing Machine -->
   <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+
+  <!-- Force Leaflet default icon paths to /icons (served from self so CSP allows it) -->
+  <script src="scripts/leaflet-icons.js"></script>
 </head>
 <body>
   <div class="background"></div>
+
   <header>
     <nav>
       <div class="logo"><h2>Lakbay</h2></div>
-      <button id="burger-btn">
-        <span></span>
-        <span></span>
-        <span></span>
-      </button>
+      <button id="burger-btn" aria-label="Menu"><span></span><span></span><span></span></button>
       <ul class="nav-links">
         <li><a href="/">Home</a></li>
-        <!--Dropdown for routes-->
-        <li class="routes-dropdown">
-          <a href="#" id="routes-link">Routes ▼</a>
-          <ul class="dropdown-list" id="routes-list-dropdown">
-            <li><a href="#" data-start="Sta Maria RiverBank" data-end="Norzagaray">Sta Maria RiverBank - Norzagaray</a></li>
-            <li><a href="#" data-start="Sta Maria Wet Market" data-end="Norzagaray">Sta Maria Wet Market - Norzagaray</a></li>
-            <li><a href="#" data-start="San Mateo" data-end="Norzagaray">Sta Maria RiverBank - Muzon</a></li>
-          </ul>
-        </li>
+        <li class="routes-dropdown"><a href="#" id="routes-link">Routes ▼</a></li>
         <li><a href="#">Saved Trips</a></li>
         <li><a href="#">Help</a></li>
         <li><a href="RegistrationPage.html">Logout</a></li>
       </ul>
     </nav>
   </header>
-  <!--Commuter Navigation-->
+
   <main>
     <section class="map-section">
       <h1>Commuter Dashboard</h1>
+
+      <!-- Map -->
       <div id="map" style="width:100%;height:calc(100vh - 200px);"></div>
-      <div id="directions-panel"></div>
+
+      <!-- UI -->
+      
       <div id="location-status">Waiting to start...</div>
-        <div class="controls">
-          <button id="show-btn">Show All Routes</button>
-          <button id="highlight-btn">Highlight Nearest Route</button>
-          <button id="clear-btn">Clear Destination</button>
-          <button id="track-btn">Start Tracking My Location Now</button>
-        </div>
+
+      <div class="controls">
+        <button id="show-btn">Show All Routes</button>
+        <button id="highlight-btn">Highlight Nearest Route</button>
+        <button id="clear-btn">Clear Destination</button>
+        <button id="track-btn">Start Tracking My Location Now</button>
+      </div>
+
       <div id="routes-list"></div>
     </section>
   </main>
+
   <footer>
     <p>© 2025 Lakbay. All rights reserved.</p>
   </footer>
+
+  <!-- App script loaded last -->
   <script src="scripts/CommuterHP.js"></script>
 </body>
 </html>

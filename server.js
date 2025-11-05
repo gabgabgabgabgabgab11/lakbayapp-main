@@ -1,4 +1,3 @@
-// server.js - COMPLETE FILE
 import express from "express";
 import cors from "cors";
 import path from "path";
@@ -20,8 +19,8 @@ const ALLOWED_ORIGINS = (process.env.CORS_ORIGIN || "").split(",").map(s => s.tr
 
 app.set("trust proxy", 1);
 
-// In-memory storage for driver statuses
-let driverStatuses = {}; // { driverId: { status, timestamp } }
+// In-memory storage for driver statuses (short term). Consider persisting to DB for production.
+let driverStatuses = {}; // { "<driverId>": { status: 'On Route', timestamp: 167..., ... } }
 
 // DB test
 (async function testDB() {
@@ -33,28 +32,39 @@ let driverStatuses = {}; // { driverId: { status, timestamp } }
   }
 })();
 
-// Helmet CSP
+// Helmet CSP - allow local assets and necessary CDNs (but prefer hosting images locally in /public/icons)
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", "https://unpkg.com", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://unpkg.com", "https://cdn.jsdelivr.net"],
-      imgSrc: ["'self'", "data:", "https://*.tile.openstreetmap.org", "https://tile.openstreetmap.org", "https://unpkg.com"],
+      imgSrc: [
+        "'self'",
+        "data:",
+        "blob:",
+        "https://*.tile.openstreetmap.org",
+        "https://tile.openstreetmap.org",
+        "https://unpkg.com",
+        "https://cdn.jsdelivr.net",
+        "https://cdnjs.cloudflare.com"
+      ],
       connectSrc: [
         "'self'",
         "ws:",
         "wss:",
         "https://*.ngrok.io",
+        "https://*.ngrok-free.app",
         "https://tile.openstreetmap.org",
         "https://router.project-osrm.org",
-        "https://unpkg.com"
+        "https://unpkg.com",
+        "https://cdn.jsdelivr.net"
       ],
       fontSrc: ["'self'", "https://unpkg.com", "https://fonts.gstatic.com", "data:"],
       objectSrc: ["'none'"],
-      frameAncestors: ["'self'"],
-    },
-  },
+      frameAncestors: ["'self'"]
+    }
+  }
 }));
 
 app.use(express.json());
@@ -82,7 +92,9 @@ app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
     const defaultAllowed = ["http://localhost:3000", "http://127.0.0.1:3000"];
-    const isAllowed = ALLOWED_ORIGINS.includes(origin) || defaultAllowed.some(u => origin.startsWith(u)) || origin.includes("ngrok.io");
+    const isAllowed = ALLOWED_ORIGINS.includes(origin) ||
+                      defaultAllowed.some(u => origin.startsWith(u)) ||
+                      (origin && (origin.includes("ngrok") || origin.includes("ngrok-free")));
     return isAllowed ? callback(null, true) : callback(new Error("CORS policy: Origin not allowed"));
   }
 }));
@@ -171,7 +183,7 @@ app.post("/api/register/:role", async (req, res) => {
   }
 });
 
-// Login - FIXED to return token and driverId
+// Login
 app.post("/api/login/:role", async (req, res) => {
   const { role } = req.params;
   const { email, password } = req.body;
@@ -197,12 +209,11 @@ app.post("/api/login/:role", async (req, res) => {
     const token = jwt.sign({ id: user.id, role }, JWT_SECRET, { expiresIn: "8h" });
     console.log(`🔐 ${role} logged in: ${email}`);
     
-    // Return token AND driverId/userId for frontend
     return res.json({ 
       message: "Login successful.",
       token: token,
-      driverId: user.id,  // For drivers
-      userId: user.id,    // For commuters
+      driverId: user.id,
+      userId: user.id,
       role: role
     });
   } catch (err) {
@@ -233,6 +244,7 @@ app.post("/api/jeepney-location", requireAuth, async (req, res) => {
       RETURNING driver_id, lat, lng, updated_at
     `;
     const { rows } = await pool.query(upsertSql, [driverId, lat, lng]);
+    console.log(`📍 Location updated for driver ${driverId}:`, { lat, lng });
     return res.json({ message: "Location updated.", location: rows[0] });
   } catch (err) {
     console.error("Location update error:", err);
@@ -240,22 +252,35 @@ app.post("/api/jeepney-location", requireAuth, async (req, res) => {
   }
 });
 
-// Get all jeepney locations (public)
+// Get all jeepney locations (public) - includes driver name, plate and current route for commuter popups
 app.get("/api/jeepney-location", async (req, res) => {
   try {
     const { rows } = await pool.query(`
-      SELECT driver_id, lat, lng, 
-             (extract(epoch from updated_at) * 1000)::bigint AS updated_at_ms 
-      FROM driver_locations
+      SELECT dl.driver_id,
+             dl.lat,
+             dl.lng,
+             (extract(epoch from dl.updated_at) * 1000)::bigint AS updated_at_ms,
+             d.name AS driver_name,
+             d.plate_number,
+             d.current_route
+      FROM driver_locations dl
+      LEFT JOIN drivers d ON d.id = dl.driver_id
     `);
+
     const locations = {};
     rows.forEach(r => {
-      locations[r.driver_id] = { 
-        lat: Number(r.lat), 
-        lng: Number(r.lng), 
-        updatedAt: Number(r.updated_at_ms) 
+      const id = String(r.driver_id);
+      locations[id] = {
+        lat: Number(r.lat),
+        lng: Number(r.lng),
+        updatedAt: Number(r.updated_at_ms),
+        name: r.driver_name || null,
+        plate: r.plate_number || null,
+        current_route: r.current_route || null
       };
     });
+
+    console.log(`📡 Serving ${Object.keys(locations).length} jeepney locations`);
     res.json({ locations });
   } catch (err) {
     console.error("Get locations error:", err);
@@ -263,7 +288,7 @@ app.get("/api/jeepney-location", async (req, res) => {
   }
 });
 
-// Save driver status (protected)
+// Save driver status (protected) - stores in-memory and logs (consider persisting)
 app.post("/api/driver-status", requireAuth, async (req, res) => {
   const { driverId, status, timestamp } = req.body;
   
@@ -283,15 +308,17 @@ app.post("/api/driver-status", requireAuth, async (req, res) => {
   }
   
   try {
-    driverStatuses[driverId] = { 
+    // Normalize key to string
+    const key = String(driverId);
+    driverStatuses[key] = { 
       status, 
-      timestamp: timestamp || Date.now() 
+      timestamp: Number(timestamp || Date.now())
     };
     
-    console.log(`🚐 Driver ${driverId} status: ${status}`);
+    console.log(`🚐 Driver ${key} status: ${status} (ts: ${driverStatuses[key].timestamp})`);
     return res.json({ 
       message: "Status updated.", 
-      status: driverStatuses[driverId] 
+      status: driverStatuses[key] 
     });
   } catch (err) {
     console.error("Status update error:", err);
@@ -299,18 +326,24 @@ app.post("/api/driver-status", requireAuth, async (req, res) => {
   }
 });
 
-// Get all driver statuses (public)
+// Get all driver statuses (public) - returns mapping keyed by string driver id
 app.get("/api/driver-status", async (req, res) => {
   try {
     const now = Date.now();
     const activeStatuses = {};
-    
-    Object.entries(driverStatuses).forEach(([id, data]) => {
-      if (data.timestamp && (now - data.timestamp < 30000)) {
-        activeStatuses[id] = data;
+
+    Object.entries(driverStatuses || {}).forEach(([id, data]) => {
+      const ts = Number(data.timestamp || 0);
+      // extend allowance during transient delays, but you can reduce this later
+      if (ts && (now - ts < 120000)) {
+        activeStatuses[String(id)] = {
+          status: data.status,
+          timestamp: ts
+        };
       }
     });
-    
+
+    console.debug('/api/driver-status returning:', activeStatuses);
     res.json(activeStatuses);
   } catch (err) {
     console.error("Get statuses error:", err);
@@ -318,17 +351,101 @@ app.get("/api/driver-status", async (req, res) => {
   }
 });
 
-// Routes endpoint
+// Routes endpoint (list and optional name query) - defensive normalization of waypoints
 app.get("/api/routes", async (req, res) => {
   try {
-    const { rows } = await pool.query(`
-      SELECT id, driver_id, route_name AS name, waypoints 
-      FROM driver_routes 
-      ORDER BY id DESC
-    `);
-    return res.json(rows);
+    const nameQuery = req.query.name;
+    let rows;
+    if (nameQuery) {
+      const q = `
+        SELECT id, driver_id, route_name AS name, waypoints, color
+        FROM driver_routes
+        WHERE LOWER(route_name) = LOWER($1)
+        ORDER BY id DESC
+      `;
+      ({ rows } = await pool.query(q, [nameQuery]));
+    } else {
+      const q = `
+        SELECT id, driver_id, route_name AS name, waypoints, color
+        FROM driver_routes
+        ORDER BY id DESC
+      `;
+      ({ rows } = await pool.query(q));
+    }
+
+    // Normalize waypoints: ensure each route has a JS array in .waypoints
+    const normalized = rows.map(r => {
+      const out = {
+        id: r.id,
+        driver_id: r.driver_id,
+        name: r.name,
+        color: r.color || null,
+        waypoints: []
+      };
+      try {
+        if (r.waypoints === null || r.waypoints === undefined) {
+          out.waypoints = [];
+        } else if (Array.isArray(r.waypoints)) {
+          out.waypoints = r.waypoints;
+        } else if (typeof r.waypoints === 'string') {
+          // attempt JSON parse
+          try {
+            out.waypoints = JSON.parse(r.waypoints);
+            if (!Array.isArray(out.waypoints)) out.waypoints = [];
+          } catch (e) {
+            // not JSON: maybe delimiter-separated coords or other format -> leave empty
+            out.waypoints = [];
+          }
+        } else {
+          // other types (e.g. PG jsonb already returned as object)
+          out.waypoints = Array.isArray(r.waypoints) ? r.waypoints : [];
+        }
+      } catch (e) {
+        out.waypoints = [];
+      }
+      return out;
+    });
+
+    return res.json(normalized);
   } catch (err) {
-    console.error("GET /api/routes error:", err);
+    console.error("GET /api/routes error (safe):", err && err.stack ? err.stack : err);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Route by id endpoint - defensive
+app.get("/api/routes/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const { rows } = await pool.query(`
+      SELECT id, driver_id, route_name AS name, waypoints, color
+      FROM driver_routes
+      WHERE id = $1
+      LIMIT 1
+    `, [id]);
+    if (!rows || rows.length === 0) return res.status(404).json({ message: "Route not found" });
+
+    const r = rows[0];
+    let waypoints = [];
+    try {
+      if (r.waypoints === null || r.waypoints === undefined) waypoints = [];
+      else if (Array.isArray(r.waypoints)) waypoints = r.waypoints;
+      else if (typeof r.waypoints === 'string') {
+        try { waypoints = JSON.parse(r.waypoints); if (!Array.isArray(waypoints)) waypoints = []; } catch (e) { waypoints = []; }
+      } else waypoints = Array.isArray(r.waypoints) ? r.waypoints : [];
+    } catch (e) { waypoints = []; }
+
+    const out = {
+      id: r.id,
+      driver_id: r.driver_id,
+      name: r.name,
+      color: r.color || null,
+      waypoints
+    };
+
+    return res.json(out);
+  } catch (err) {
+    console.error("GET /api/routes/:id error (safe):", err && err.stack ? err.stack : err);
     return res.status(500).json({ message: "Server error" });
   }
 });
@@ -344,12 +461,14 @@ const server = app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${addr.port}`);
   console.log(`Local: http://localhost:${addr.port}`);
   
-  const nets = networkInterfaces();
-  for (const name of Object.keys(nets)) {
-    for (const net of nets[name]) {
-      if (net.family === "IPv4" && !net.internal) {
-        console.log(`LAN (${name}): http://${net.address}:${addr.port}`);
-      }
+ const nets = networkInterfaces();
+for (const name of Object.keys(nets)) {
+  for (const net of nets[name]) {
+    if (net.family === 'IPv4' && !net.internal) {
+      const serverAddr = server.address();
+      const port = (serverAddr && typeof serverAddr === 'object' && serverAddr.port) ? serverAddr.port : PORT;
+      console.log(`LAN (${name}): http://${net.address}:${port}`);
     }
   }
+}
 });

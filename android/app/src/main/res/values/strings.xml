@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">lakbay-app</string>
-    <string name="title_activity_main">lakbay-app</string>
-    <string name="package_name">com.lakbay.lakbay</string>
-    <string name="custom_url_scheme">com.lakbay.lakbay</string>
-</resources>
