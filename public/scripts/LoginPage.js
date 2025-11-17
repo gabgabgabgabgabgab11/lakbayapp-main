@@ -1,7 +1,4 @@
-// Shared login handler for commuter and driver.
-// Reads ?role=driver or ?role=commuter from URL and posts to the correct endpoint.
-// Saves tokens and redirects to the appropriate homepage.
-
+// Enhanced login handler with validation
 (() => {
   // Helper: read query param
   function getQueryParam(name) {
@@ -21,11 +18,16 @@
     driver: '/DriverHomepage.html'
   };
 
+  // Validation patterns
+  const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
   document.addEventListener('DOMContentLoaded', () => {
     const titleEl = document.getElementById('login-title');
     const subEl = document.getElementById('login-sub');
     const form = document.getElementById('shared-login-form');
     const statusText = document.getElementById('status-text');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
 
     // Adjust UI text depending on role
     if (role === 'driver') {
@@ -36,19 +38,111 @@
       subEl.textContent = 'Sign in to manage your trips.';
     }
 
+    // Add password toggle eye icon
+    const passwordWrapper = passwordInput.parentElement;
+    if (!passwordWrapper.querySelector('.toggle-password')) {
+      passwordWrapper.style.position = 'relative';
+      
+      const eyeIcon = document.createElement('i');
+      eyeIcon.className = 'fas fa-eye toggle-password';
+      eyeIcon.style.position = 'absolute';
+      eyeIcon.style.right = '12px';
+      eyeIcon.style.top = '70%';
+      eyeIcon.style.transform = 'translateY(-50%)';
+      eyeIcon.style.cursor = 'pointer';
+      eyeIcon.style.color = 'rgba(255, 255, 255, 0.6)';
+      eyeIcon.style.fontSize = '1.1rem';
+      
+      passwordInput.style.paddingRight = '45px';
+      passwordWrapper.appendChild(eyeIcon);
+      
+      eyeIcon.addEventListener('click', () => {
+        if (passwordInput.type === 'password') {
+          passwordInput.type = 'text';
+          eyeIcon.classList.remove('fa-eye');
+          eyeIcon.classList.add('fa-eye-slash');
+        } else {
+          passwordInput.type = 'password';
+          eyeIcon.classList.remove('fa-eye-slash');
+          eyeIcon.classList.add('fa-eye');
+        }
+      });
+    }
+
+    // Real-time email validation
+    emailInput.addEventListener('blur', () => {
+      const value = emailInput.value.trim();
+      if (value && !emailPattern.test(value)) {
+        emailInput.style.borderColor = '#ff4444';
+        statusText.textContent = 'Please enter a valid email address';
+        statusText.style.color = '#ff4444';
+      } else {
+        emailInput.style.borderColor = '';
+        if (statusText.textContent.includes('email')) {
+          statusText.textContent = '';
+        }
+      }
+    });
+
+    // Clear error on input
+    emailInput.addEventListener('input', () => {
+      emailInput.style.borderColor = '';
+      if (statusText.textContent.includes('email')) {
+        statusText.textContent = '';
+      }
+    });
+
+    passwordInput.addEventListener('input', () => {
+      passwordInput.style.borderColor = '';
+    });
+
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      statusText.textContent = 'Authenticating...';
-      statusText.style.color = 'white';
+      
+      const email = emailInput.value.trim();
+      const password = passwordInput.value.trim();
 
-      const email = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value.trim();
+      // Reset styles
+      emailInput.style.borderColor = '';
+      passwordInput.style.borderColor = '';
+      statusText.textContent = '';
 
-      if (!email || !password) {
-        statusText.textContent = 'Please enter your credentials.';
-        statusText.style.color = '#ff4f4f';
+      // Validate email
+      if (!email) {
+        emailInput.style.borderColor = '#ff4444';
+        statusText.textContent = 'Email is required';
+        statusText.style.color = '#ff4444';
+        emailInput.focus();
         return;
       }
+
+      if (!emailPattern.test(email)) {
+        emailInput.style.borderColor = '#ff4444';
+        statusText.textContent = 'Please enter a valid email address';
+        statusText.style.color = '#ff4444';
+        emailInput.focus();
+        return;
+      }
+
+      // Validate password
+      if (!password) {
+        passwordInput.style.borderColor = '#ff4444';
+        statusText.textContent = 'Password is required';
+        statusText.style.color = '#ff4444';
+        passwordInput.focus();
+        return;
+      }
+
+      if (password.length < 8) {
+        passwordInput.style.borderColor = '#ff4444';
+        statusText.textContent = 'Password must be at least 8 characters';
+        statusText.style.color = '#ff4444';
+        passwordInput.focus();
+        return;
+      }
+
+      statusText.textContent = 'Authenticating...';
+      statusText.style.color = 'white';
 
       // pick endpoint based on role
       const endpoint = endpoints[role] || endpoints.commuter;
@@ -64,75 +158,50 @@
         const text = await res.text();
         let data = null;
         try { data = JSON.parse(text); } catch (e) { data = null; }
-        console.log('API Response:', data);
+        
         if (!res.ok) {
           const msg = (data && data.message) ? data.message : (res.statusText || 'Login failed');
-          statusText.textContent = msg;
-          statusText.style.color = '#ff4f4f';
+          statusText.textContent = '✗ ' + msg;
+          statusText.style.color = '#ff4444';
+          
+          // Highlight fields on error
+          emailInput.style.borderColor = '#ff4444';
+          passwordInput.style.borderColor = '#ff4444';
           return;
         }
 
-        // Success: expect the API to return a JWT token and possibly driverId
+        // Success: expect the API to return a JWT token
         const token = data && (data.token || data.jwt || data.accessToken || data.access_token);
         const driverId = data && (data.driverId || data.id || data.userId || data.driver_id);
         const apiBase = data && (data.apiBase || data.api_base);
 
         if (!token) {
-          statusText.textContent = 'Login succeeded but no token returned from server.';
-          statusText.style.color = '#ff4f4f';
+          statusText.textContent = '✗ Login succeeded but no token returned from server.';
+          statusText.style.color = '#ff4444';
           return;
         }
 
-        // store tokens/ids for both commuter and driver flows
+        // store tokens/ids
         if (role === 'driver') {
-          // store under both key conventions for compatibility
           localStorage.setItem('driverToken', token);
           localStorage.setItem('driver_token', token);
           if (driverId) localStorage.setItem('driverId', String(driverId));
           if (apiBase) localStorage.setItem('driver_api_base', apiBase);
         } else {
-          // commuter
           localStorage.setItem('commuter_token', token);
           if (data && data.userId) localStorage.setItem('commuter_id', String(data.userId));
         }
 
-        statusText.textContent = 'Login successful! Redirecting...';
+        statusText.textContent = '✓ Login successful! Redirecting...';
         statusText.style.color = '#4caf50';
 
-        // If running inside native Capacitor app, set native prefs for driver (best-effort)
-        if (role === 'driver' && window.Capacitor && typeof Capacitor.isNativePlatform === 'function' && Capacitor.isNativePlatform()) {
-          (async () => {
-            try {
-              const Plugins = (window.Capacitor && window.Capacitor.Plugins) || (await import('@capacitor/core')).Plugins;
-              const BackgroundLocation = Plugins.BackgroundLocation;
-              if (BackgroundLocation && BackgroundLocation.setAuth) {
-                await BackgroundLocation.setAuth({ token, driverId: String(driverId || '') });
-                if (apiBase) await BackgroundLocation.setApiBase({ apiBase });
-                // optional: do not auto-start service here if you prefer explicit Start Driving
-                // await BackgroundLocation.startService();
-                console.log('Native plugin: saved auth for driver');
-              }
-            } catch (err) {
-              console.warn('Native plugin setAuth failed', err);
-            }
-          })();
-        }
-
-        // If in the browser but you included WebLocationTracker, start tracking for driver fallback
-        if (role === 'driver' && typeof WebLocationTracker !== 'undefined' && WebLocationTracker.startWebTracking) {
-          try {
-            await WebLocationTracker.startWebTracking(token, driverId || '', apiBase || window.location.origin);
-            console.log('WebLocationTracker started (browser fallback)');
-          } catch (e) {
-            console.warn('WebLocationTracker start failed', e);
-          }
-        }
-
-        setTimeout(() => { window.location.href = redirectTo[role] || redirectTo.commuter; }, 900);
+        setTimeout(() => { 
+          window.location.href = redirectTo[role] || redirectTo.commuter; 
+        }, 900);
       } catch (err) {
         console.error('Login error', err);
-        statusText.textContent = 'Server error. Please try again later.';
-        statusText.style.color = '#ff4f4f';
+        statusText.textContent = '✗ Server error. Please try again later.';
+        statusText.style.color = '#ff4444';
       }
     });
   });

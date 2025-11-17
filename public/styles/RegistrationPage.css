@@ -7,11 +7,10 @@
   font-family: 'Poppins', sans-serif;
 }
 
-/* Add to RegistrationPage.css and CommuterLogin.css */
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55); /* Optional: darken */
+  background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(4px);
   z-index: -1;
 }
@@ -19,7 +18,7 @@
 body {
   color: white;
   overflow-x: hidden;
-  height: 100vh;
+  min-height: 100vh;
   background: url('../img/bg.jpg') center center / cover no-repeat fixed;
   position: relative;
 }
@@ -30,6 +29,7 @@ header {
   position: sticky;
   top: 0;
   z-index: 100;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
 nav {
@@ -42,6 +42,7 @@ nav .logo h2 {
   color: #FFD700;
   font-weight: 700;
   font-size: 1.8rem;
+  cursor: pointer;
 }
 
 .nav-links {
@@ -66,92 +67,258 @@ nav .logo h2 {
   display: flex;
   justify-content: center;
   align-items: center;
+  padding: 2rem 1rem;
+  min-height: calc(100vh - 150px);
 }
 
 .register-card {
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(12px);
   padding: 40px;
   border-radius: 15px;
-  width: 400px;
+  width: 100%;
+  max-width: 500px;
   text-align: center;
-  box-shadow: 0 0 20px rgba(0,0,0,0.6);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+  animation: fadeIn 0.8s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 h1 {
   margin-bottom: 10px;
   color: #FFD700;
+  font-size: 2rem;
+}
+
+.register-card > p {
+  color: #ddd;
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
 }
 
 .role-selection {
   display: flex;
   justify-content: space-between;
+  gap: 10px;
   margin: 20px 0;
 }
 
 .role-btn {
-  background: none;
+  background: transparent;
   border: 2px solid #FFD700;
   color: #FFD700;
-  padding: 8px 15px;
+  padding: 10px 15px;
   border-radius: 8px;
   cursor: pointer;
-  transition: 0.3s;
+  transition: all 0.3s ease;
   flex: 1;
-  margin: 0 5px;
+  font-weight: 600;
+  font-size: 0.9rem;
 }
 
 .role-btn.active, .role-btn:hover {
   background: #FFD700;
   color: #000;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
 }
 
 .form-fields {
   text-align: left;
   margin-bottom: 20px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 10px;
 }
 
-.form-fields label {
+.form-fields::-webkit-scrollbar {
+  width: 8px;
+}
+
+.form-fields::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+.form-fields::-webkit-scrollbar-thumb {
+  background: #FFD700;
+  border-radius: 10px;
+}
+
+.form-group {
+  margin-bottom: 1.2rem;
+}
+
+.form-group label {
   display: block;
-  margin-top: 10px;
-  font-weight: 500;
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: #f1f1f1;
+  font-size: 0.95rem;
 }
 
-.form-fields input {
+.required {
+  color: #ff4444;
+  font-weight: bold;
+}
+
+.form-group input,
+.form-group select {
   width: 100%;
-  padding: 10px;
+  padding: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #FFD700;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.form-group input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.form-group select {
+  cursor: pointer;
+}
+
+.form-group select option {
+  background: #1a1a1a;
+  color: white;
+}
+
+/* Password wrapper with eye icon */
+.password-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.password-wrapper input {
+  padding-right: 45px;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 1.1rem;
+  transition: color 0.3s ease;
+}
+
+.toggle-password:hover {
+  color: #FFD700;
+}
+
+/* Input error state */
+.input-error {
+  border-color: #ff4444 !important;
+  background: rgba(255, 68, 68, 0.1) !important;
+}
+
+.error-message {
+  color: #ff4444;
+  font-size: 0.8rem;
   margin-top: 5px;
-  border: none;
-  border-radius: 5px;
+  min-height: 18px;
+  display: block;
 }
 
 .submit-btn {
   background: #FFD700;
   color: #000;
   font-weight: 600;
-  padding: 10px 0;
+  padding: 12px 0;
   border: none;
   width: 100%;
   border-radius: 8px;
   cursor: pointer;
-  transition: 0.3s;
+  transition: all 0.3s ease;
+  font-size: 1.05rem;
+  margin-top: 10px;
 }
 
 .submit-btn:hover {
   background: #ffcc33;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
+}
+
+.submit-btn:active {
+  transform: translateY(0);
 }
 
 .redirect {
-  margin-top: 15px;
+  margin-top: 20px;
   font-size: 0.9rem;
+  color: #ddd;
+}
+
+.redirect a {
+  color: #FFD700;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.3s;
+}
+
+.redirect a:hover {
+  color: #fff;
+  text-decoration: underline;
 }
 
 #status-message {
-  margin-top: 10px;
-  color: #FFD700;
+  margin-top: 15px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  min-height: 20px;
+  padding: 8px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
 }
 
 footer {
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.7);
   text-align: center;
-  padding: 10px 0;
+  padding: 1rem;
+  font-size: 0.9rem;
+  margin-top: auto;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .register-card {
+    padding: 30px 20px;
+  }
+
+  .role-selection {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .role-btn {
+    width: 100%;
+  }
+
+  .form-fields {
+    max-height: 350px;
+  }
 }
