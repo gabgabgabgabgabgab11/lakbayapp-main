@@ -1,15 +1,4 @@
-// public/scripts/CommuterHP.js
-// Commuter-facing map script - final version per user request:
-// - Only the statuses: "Docking", "Loading", "On Route", "End" are supported and displayed with emojis.
-// - Popups appear above the jeep icon and display Name, Plate, Status (with emoji), Route (fetched on click).
-// - Uses only /icons/marker-icon.png for generic markers; optional /icons/Jeep.png makes jeep markers distinct.
-// - Show All Routes (#show-btn) and Highlight Nearest Route (#highlight-btn) use existing buttons (no automatic drawing).
-// - Hamburger (burger) toggles .nav-links on mobile or creates a minimal mobile nav if none exists.
-// - ETA uses fixed 30 km/h when routes are computed.
-// - Defensive/fallback behavior if endpoints or icons are missing.
-//
-// Installation: save as public/scripts/CommuterHP.js and hard-refresh (Ctrl+F5).
-// Dependencies: leaflet.js and leaflet-routing-machine should be loaded before this script.
+
 
 (() => {
   const API_BASE = (() => {
