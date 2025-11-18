@@ -132,6 +132,27 @@ nav {
 .form-group input::placeholder {
   color: #ccc;
 }
+.password-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.password-wrapper input {
+  width: 100%;
+  padding-right: 45px; /* space for eye button */
+}
+
+.password-wrapper .toggle-password {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: rgba(255,255,255,0.8);
+  font-size: 1.1rem;
+}
 
 button {
   width: 100%;

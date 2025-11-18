@@ -32,7 +32,7 @@ header {
   padding: 1rem 2rem;
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 10050; /* raised so mobile menu sits above map panes */
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
@@ -73,6 +73,7 @@ nav a:hover {
   border: none;
   cursor: pointer;
   padding: 5px;
+  z-index: 10052;
 }
 
 #burger-btn span {
@@ -364,7 +365,7 @@ footer {
     padding: 10px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     display: none;
-    z-index: 101;
+    z-index: 10055; /* ensure it appears above map layers */
   }
 
   nav ul.show {

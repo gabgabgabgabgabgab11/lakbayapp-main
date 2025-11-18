@@ -157,11 +157,13 @@ app.post("/api/register/:role", async (req, res) => {
   try {
     const password_hash = await bcrypt.hash(password, 12);
     const table = tableForRole(role);
-    const insertSql = `INSERT INTO ${table} (email, password_hash, name, created_at) 
-                       VALUES ($1,$2,$3,NOW()) 
-                       ON CONFLICT (email) DO NOTHING 
-                       RETURNING id,email,name`;
-    const result = await pool.query(insertSql, [email, password_hash, name || null]);
+      const insertSql = `INSERT INTO ${table} (email, password_hash, name, plate_number, current_route, created_at) 
+                         VALUES ($1,$2,$3,$4,$5,NOW()) 
+                         ON CONFLICT (email) DO NOTHING 
+                         RETURNING id,email,name`;
+      const plate = req.body.plate || req.body.plate_number || null;
+      const route = req.body.route || req.body.current_route || null;
+      const result = await pool.query(insertSql, [email, password_hash, name || null, plate, route]);
 
     if (result.rowCount === 0) {
       const existing = await findUserByEmail(role, email);

@@ -1,4 +1,4 @@
-// Enhanced login handler with validation
+// Enhanced login handler with validation (updated to use inline SVG eye toggle instead of Font Awesome)
 (() => {
   // Helper: read query param
   function getQueryParam(name) {
@@ -21,6 +21,10 @@
   // Validation patterns
   const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
+  // Inline SVGs for eye icons
+  const EYE_SVG_SMALL = `<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.47 12.39C3.98 7.86 7.61 5 12 5c4.39 0 8.02 2.86 9.53 7.39a1 1 0 0 1 0 .33C20.02 16.14 16.39 19 12 19c-4.39 0-8.02-2.86-9.53-7.39a1 1 0 0 1 0-.33z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  const EYE_SLASH_SVG_SMALL = `<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 3l18 18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M10.58 10.58A3 3 0 0 0 13.42 13.42" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2.47 12.39C3.98 7.86 7.61 5 12 5c1.3 0 2.55.26 3.66.73" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.34 14.34C13.45 15.23 12.26 15.7 11 15.7c-1.3 0-2.55-.26-3.66-.73" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
   document.addEventListener('DOMContentLoaded', () => {
     const titleEl = document.getElementById('login-title');
     const subEl = document.getElementById('login-sub');
@@ -38,33 +42,50 @@
       subEl.textContent = 'Sign in to manage your trips.';
     }
 
-    // Add password toggle eye icon
+    // Add password toggle eye button (inline SVG)
     const passwordWrapper = passwordInput.parentElement;
     if (!passwordWrapper.querySelector('.toggle-password')) {
       passwordWrapper.style.position = 'relative';
       
-      const eyeIcon = document.createElement('i');
-      eyeIcon.className = 'fas fa-eye toggle-password';
-      eyeIcon.style.position = 'absolute';
-      eyeIcon.style.right = '12px';
-      eyeIcon.style.top = '70%';
-      eyeIcon.style.transform = 'translateY(-50%)';
-      eyeIcon.style.cursor = 'pointer';
-      eyeIcon.style.color = 'rgba(255, 255, 255, 0.6)';
-      eyeIcon.style.fontSize = '1.1rem';
+      const eyeBtn = document.createElement('button');
+      eyeBtn.type = 'button';
+      eyeBtn.className = 'toggle-password';
+      eyeBtn.setAttribute('aria-label', 'Toggle password visibility');
+      eyeBtn.style.position = 'absolute';
+      // place the button inside the input wrapper with a consistent inset
+      eyeBtn.style.right = '12px';
+      eyeBtn.style.top = '50%';
+      eyeBtn.style.transform = 'translateY(-50%)';
+      eyeBtn.style.cursor = 'pointer';
+      eyeBtn.style.background = 'transparent';
+      eyeBtn.style.border = 'none';
+      eyeBtn.style.color = 'rgba(255,255,255,0.95)';
+      eyeBtn.style.fontSize = '1.1rem';
+      eyeBtn.style.width = '36px';
+      eyeBtn.style.height = '36px';
+      eyeBtn.style.display = 'flex';
+      eyeBtn.style.alignItems = 'center';
+      eyeBtn.style.justifyContent = 'center';
+      eyeBtn.style.padding = '0';
+      eyeBtn.style.zIndex = '3';
+      eyeBtn.innerHTML = EYE_SVG_SMALL;
+      eyeBtn.dataset.state = 'hidden';
       
-      passwordInput.style.paddingRight = '45px';
-      passwordWrapper.appendChild(eyeIcon);
+      // ensure input has enough right padding so the button doesn't overlap the text
+      const pad = '46px';
+      passwordInput.style.paddingRight = pad;
+      passwordInput.style.setProperty('padding-right', pad, 'important');
+      passwordWrapper.appendChild(eyeBtn);
       
-      eyeIcon.addEventListener('click', () => {
+      eyeBtn.addEventListener('click', () => {
         if (passwordInput.type === 'password') {
           passwordInput.type = 'text';
-          eyeIcon.classList.remove('fa-eye');
-          eyeIcon.classList.add('fa-eye-slash');
+          eyeBtn.innerHTML = EYE_SLASH_SVG_SMALL;
+          eyeBtn.dataset.state = 'visible';
         } else {
           passwordInput.type = 'password';
-          eyeIcon.classList.remove('fa-eye-slash');
-          eyeIcon.classList.add('fa-eye');
+          eyeBtn.innerHTML = EYE_SVG_SMALL;
+          eyeBtn.dataset.state = 'hidden';
         }
       });
     }

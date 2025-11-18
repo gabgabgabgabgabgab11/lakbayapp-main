@@ -1,3 +1,4 @@
+// RegistrationPage.js - replaced Font Awesome eye icon with inline SVG toggle button
 const form = document.getElementById("register-form");
 const formFields = document.querySelector(".form-fields");
 const roleButtons = document.querySelectorAll(".role-btn");
@@ -74,6 +75,38 @@ const validationMessages = {
   required: "This field is required"
 };
 
+// --- Inline SVGs for eye / eye-slash (no external fonts) ---
+const EYE_SVG = `<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M2.47 12.39C3.98 7.86 7.61 5 12 5c4.39 0 8.02 2.86 9.53 7.39a1 1 0 0 1 0 .33C20.02 16.14 16.39 19 12 19c-4.39 0-8.02-2.86-9.53-7.39a1 1 0 0 1 0-.33z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>`;
+
+const EYE_SLASH_SVG = `<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M3 3l18 18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M10.58 10.58A3 3 0 0 0 13.42 13.42" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M2.47 12.39C3.98 7.86 7.61 5 12 5c1.3 0 2.55.26 3.66.73" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M14.34 14.34C13.45 15.23 12.26 15.7 11 15.7c-1.3 0-2.55-.26-3.66-.73" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>`;
+
+// Utility to create a small button with the eye SVG
+function makeEyeButton(fieldName) {
+  const btn = document.createElement("button");
+  btn.type = "button"; // avoid submitting the form
+  btn.className = "toggle-password";
+  btn.setAttribute("data-target", fieldName);
+  btn.setAttribute("aria-label", "Toggle password visibility");
+  btn.style.background = "transparent";
+  btn.style.border = "none";
+  btn.style.padding = "0";
+  btn.style.marginLeft = "8px";
+  btn.style.cursor = "pointer";
+  btn.style.color = "rgba(255,255,255,0.9)";
+  btn.innerHTML = EYE_SVG;
+  btn.dataset.state = "hidden"; // hidden = password masked; visible = plaintext
+  btn.addEventListener("click", () => togglePasswordVisibility(fieldName));
+  return btn;
+}
+
 // Render form fields based on role
 function renderFields(role) {
   formFields.innerHTML = "";
@@ -114,6 +147,8 @@ function renderFields(role) {
       // Password field with eye icon
       const passwordWrapper = document.createElement("div");
       passwordWrapper.className = "password-wrapper";
+      passwordWrapper.style.display = "flex";
+      passwordWrapper.style.alignItems = "center";
       
       input = document.createElement("input");
       input.type = "password";
@@ -123,13 +158,12 @@ function renderFields(role) {
       input.required = field.required;
       input.minLength = 8;
       input.maxLength = 32;
+      input.style.flex = "1";
       
-      const eyeIcon = document.createElement("i");
-      eyeIcon.className = "fas fa-eye toggle-password";
-      eyeIcon.setAttribute("data-target", field.name);
+      const eyeBtn = makeEyeButton(field.name);
       
       passwordWrapper.appendChild(input);
-      passwordWrapper.appendChild(eyeIcon);
+      passwordWrapper.appendChild(eyeBtn);
       
       fieldWrapper.appendChild(label);
       fieldWrapper.appendChild(passwordWrapper);
@@ -140,9 +174,6 @@ function renderFields(role) {
       fieldWrapper.appendChild(errorDiv);
       
       formFields.appendChild(fieldWrapper);
-      
-      // Add event listener for eye icon
-      eyeIcon.addEventListener("click", () => togglePasswordVisibility(field.name));
       
       // Add real-time validation
       input.addEventListener("input", () => validateField(input, field));
@@ -182,16 +213,17 @@ function renderFields(role) {
 // Toggle password visibility
 function togglePasswordVisibility(fieldName) {
   const input = document.getElementById(fieldName);
-  const icon = document.querySelector(`[data-target="${fieldName}"]`);
-  
+  const btn = document.querySelector(`[data-target="${fieldName}"]`);
+  if (!input || !btn) return;
+
   if (input.type === "password") {
     input.type = "text";
-    icon.classList.remove("fa-eye");
-    icon.classList.add("fa-eye-slash");
+    btn.innerHTML = EYE_SLASH_SVG;
+    btn.dataset.state = "visible";
   } else {
     input.type = "password";
-    icon.classList.remove("fa-eye-slash");
-    icon.classList.add("fa-eye");
+    btn.innerHTML = EYE_SVG;
+    btn.dataset.state = "hidden";
   }
 }
 

@@ -5,246 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>About Us | Lakbay</title>
   <link rel="icon" type="image/x-icon" href="img/jeepney.ico">
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: 'Poppins', sans-serif;
-    }
-
-    body {
-      color: white;
-      overflow-x: hidden;
-      min-height: 100vh;
-      background: url('img/bg.jpg') center center / cover no-repeat fixed;
-      position: relative;
-    }
-
-    /* Header - Same as Landing Page */
-    header {
-      background: rgba(0, 0, 0, 0.65);
-      backdrop-filter: blur(10px);
-      position: sticky;
-      top: 0;
-      width: 100%;
-      z-index: 1000;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    }
-
-    nav {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 1rem 2rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .logo h2 {
-      color: #ffc300;
-      font-size: 1.9rem;
-      letter-spacing: 1px;
-      cursor: pointer;
-    }
-
-    .nav-links {
-      list-style: none;
-      display: flex;
-      gap: 2rem;
-    }
-
-    .nav-links a {
-      color: #fff;
-      text-decoration: none;
-      font-weight: 500;
-      transition: 0.3s;
-    }
-
-    .nav-links a:hover {
-      color: #ffc300;
-    }
-
-    .nav-links a.active {
-      color: #ffc300;
-      border-bottom: 2px solid #ffc300;
-    }
-
-    /* Main Content */
-    main {
-      position: relative;
-      min-height: calc(100vh - 160px);
-      padding: 3rem 2rem;
-    }
-
-    .overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.55);
-      backdrop-filter: blur(4px);
-      z-index: -1;
-    }
-
-    .container {
-      max-width: 1100px;
-      margin: 0 auto;
-      position: relative;
-      z-index: 2;
-    }
-
-    .page-header {
-      text-align: center;
-      margin-bottom: 3rem;
-      animation: fadeIn 1s ease;
-    }
-
-    .page-header h1 {
-      font-size: 3rem;
-      color: #ffc300;
-      margin-bottom: 0.5rem;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-    }
-
-    .page-header p {
-      font-size: 1.2rem;
-      color: #f2f2f2;
-      opacity: 0.9;
-    }
-
-    .section {
-      background: rgba(255, 255, 255, 0.08);
-      backdrop-filter: blur(10px);
-      border-left: 6px solid #ffc300;
-      border-radius: 15px;
-      padding: 2.5rem;
-      margin-bottom: 2rem;
-      box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-      animation: slideUp 0.8s ease;
-    }
-
-    .section:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 8px 30px rgba(255, 195, 0, 0.3);
-    }
-
-    .section h2 {
-      color: #ffc300;
-      font-size: 1.8rem;
-      text-transform: uppercase;
-      margin-bottom: 1rem;
-      letter-spacing: 1px;
-    }
-
-    .section p {
-      margin-bottom: 1rem;
-      color: #f2f2f2;
-      font-size: 1.05rem;
-      line-height: 1.8;
-    }
-
-    .sub-points {
-      margin-top: 1.5rem;
-      background: rgba(255, 255, 255, 0.05);
-      padding: 1.5rem;
-      border-radius: 10px;
-      border-left: 4px solid #ffc300;
-    }
-
-    .sub-points p {
-      margin-bottom: 1rem;
-    }
-
-    .sub-points strong {
-      color: #ffc300;
-    }
-
-    ul {
-      list-style: none;
-      padding-left: 0;
-    }
-
-    ul li {
-      margin-bottom: 1rem;
-      padding-left: 2rem;
-      position: relative;
-      color: #f2f2f2;
-      line-height: 1.8;
-    }
-
-    ul li::before {
-      position: absolute;
-      left: 0;
-      top: 0;
-      font-size: 1.2rem;
-    }
-
-    /* Footer */
-    footer {
-      background: rgba(0, 0, 0, 0.75);
-      backdrop-filter: blur(8px);
-      color: #fff;
-      text-align: center;
-      padding: 1.5rem;
-      font-size: 0.9rem;
-      margin-top: 2rem;
-    }
-
-    footer a {
-      color: #ffc300;
-      text-decoration: none;
-      transition: 0.3s;
-    }
-
-    footer a:hover {
-      text-decoration: underline;
-    }
-
-    /* Animations */
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(30px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    @keyframes slideUp {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    /* Responsive */
-    @media (max-width: 768px) {
-      .page-header h1 {
-        font-size: 2rem;
-      }
-
-      .section {
-        padding: 1.5rem;
-      }
-
-      nav {
-        flex-direction: column;
-      }
-
-      .nav-links {
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 1rem;
-      }
-    }
-  </style>
+  <link rel="stylesheet" href="styles/AboutUs.css">
 </head>
 <body>
   <div class="overlay"></div>
@@ -252,7 +13,7 @@
   <header>
     <nav>
       <div class="logo">
-        <h2 onclick="window.location.href='LandingPage.html'">Lakbay</h2>
+        <h2 id="logo-heading">Lakbay</h2>
       </div>
       <ul class="nav-links">
         <li><a href="LandingPage.html">Home</a></li>
@@ -275,61 +36,69 @@
         <h2>Our Story</h2>
         <p>
           At <strong>LAKBAY</strong>, we are revolutionizing public transportation in the Philippines by seamlessly integrating traditional jeepney services with modern technology. 
-          Drawing inspiration from the dynamic urban landscapes of cities like Manila, our platform addresses the everyday challenges faced by commuters. 
-          Unlike general navigation applications such as Waze, we specialize in jeepney tracking, enabling commuters to connect with drivers along shared routes for efficient, on-demand rides.
+          Drawing inspiration from the dynamic urban landscapes of cities like Manila, our platform addresses the everyday challenges faced by commuters.
         </p>
       </section>
 
       <section class="section">
-        <h2>Our Mission</h2>
-        <p>
-          Our mission is to enhance urban mobility by making commuting safer, more efficient, and accessible to all. 
-          We are committed to empowering local jeepney drivers and commuters, fostering community connections while minimizing wait times and transportation expenses. 
-          Through our platform, we aim to elevate the jeepney experience into a reliable, technology-driven solution that benefits both passengers and operators.
+        <h2>Meet the Team</h2>
+        <p style="text-align: center; margin-bottom: 2rem;">
+          Established by a group of technology specialists and transportation industry veterans dedicated to Filipino innovation.
         </p>
-      </section>
+        
+        <div class="team-grid">
+          <div class="team-member">
+            <div class="team-photo">👨‍💻</div>
+            <h3>Amiel Yancy Garcia</h3>
+            <p class="role">Project Lead</p>
+            <p class="title">Full-Stack Developer</p>
+          </div>
 
-      <section class="section">
-        <h2>How It Works</h2>
-        <div class="sub-points">
-          <p><strong>For Commuters:</strong> Monitor nearby jeepneys traveling your route, submit ride requests, and arrange pickups at convenient points along the way. 
-          Eliminate the need for fixed stops and enjoy flexible travel.</p>
+          <div class="team-member">
+            <img src="img/team/eg.jpg" alt="👨‍💻 Emmanuel Gabriel Lasdoce" class="team-photo">
+            <h3>Emmanuel Gabriel Lasdoce</h3>
+            <p class="role">Backend Developer</p>
+            <p class="title">Database Architect</p>
+          </div>
 
-          <p><strong>For Drivers:</strong> Utilize a dedicated interface to view ride requests from commuters, optimize your route, and maximize earnings by accommodating additional passengers. 
-          It functions as an intelligent assistant for your jeepney operations.</p>
+          <div class="team-member">
+            <div class="team-photo">👨‍💻</div>
+            <h3>Aldrin Cantiga</h3>
+            <p class="role">Frontend Developer</p>
+            <p class="title">UI/UX Designer</p>
+          </div>
 
-          <p><strong>Powered by Technology:</strong> Leveraging GPS tracking and advanced matching algorithms, we facilitate secure, efficient pairings while upholding user privacy and data protection standards.</p>
+          <div class="team-member">
+            <div class="team-photo">👨‍💻</div>
+            <h3>Rafael German</h3>
+            <p class="role">Mobile Developer</p>
+            <p class="title">iOS/Android Specialist</p>
+          </div>
+
+          <div class="team-member">
+            <img src="img/team/Chanoes.jpg" alt="👨‍💻 Mark Christian Joaquin" class="team-photo">
+            <h3>Mark Christian Joaquin</h3>
+            <p class="role">DevOps Engineer</p>
+            <p class="title">System Administrator</p>
+          </div>
+
+          <div class="team-member">
+            <img src="img/team/kevs.jpg" alt="👨‍💻 Kevin De Jesus" class="team-photo">
+            <h3>Kevin De Jesus</h3>
+            <p class="role">QA Engineer</p>
+            <p class="title">Testing Specialist</p>
+          </div>
         </div>
       </section>
 
       <section class="section">
         <h2>Our Values</h2>
         <ul>
-          <li><strong>Community-Oriented:</strong> We champion local jeepney drivers and advocate for sustainable, cost-effective transportation solutions.</li>
-          <li><strong>Innovative Heritage:</strong> We harmonize the rich tradition of jeepney culture with state-of-the-art application features.</li>
-          <li><strong>Prioritizing Safety:</strong> We implement stringent user verification processes and continuous monitoring to ensure a trustworthy environment.</li>
-          <li><strong>Inclusive Access:</strong> Our platform is designed to serve a diverse range of users, from students to professionals, promoting equitable and streamlined commuting experiences.</li>
+          <li><strong>Community-Oriented:</strong> We champion local jeepney drivers and advocate for sustainable transportation.</li>
+          <li><strong>Innovative Heritage:</strong> We harmonize jeepney tradition with state-of-the-art features.</li>
+          <li><strong>Prioritizing Safety:</strong> We implement stringent verification and continuous monitoring.</li>
+          <li><strong>Inclusive Access:</strong> Our platform serves diverse users promoting equitable commuting.</li>
         </ul>
-      </section>
-
-      <section class="section">
-        <h2>Meet the Team</h2>
-        <p>
-          Established by a group of technology specialists and transportation industry veterans dedicated to Filipino innovation, 
-          <strong>LAKBAY</strong> is led by <strong>Rafael German</strong>, <strong>Emmanuel Gabriel Lasdoce</strong>,<strong> Kevin De Jesus</strong>,<strong > Mark Christian Joaquin</strong>,<strong> Aldrin Cantiga</strong>, and <strong> Amiel Yancy Garcia</strong>. 
-          Together, they bring expertise in app development, user experience, and local transport dynamics to drive our vision forward. 
-          We remain devoted to evolving alongside our users, refining the application through ongoing feedback and collaboration.
-        </p>
-      </section>
-
-      <section class="section">
-        <h2>Join Us Today</h2>
-        <p>
-          Embark on smarter commuting with <strong>LAKBAY</strong>. 
-          Download <strong>LAKBAY</strong> from the App Store or Google Play to transform your travel experience. 
-          For drivers, register to increase your income while contributing to community mobility. 
-          Let us journey forward together!
-        </p>
       </section>
     </div>
   </main>
@@ -337,5 +106,6 @@
   <footer>
     <p>&copy; 2025 <strong>LAKBAY</strong>. All Rights Reserved. | <a href="LandingPage.html">Back to Home</a></p>
   </footer>
+  <script src="scripts/AboutUs.js"></script>
 </body>
 </html>
